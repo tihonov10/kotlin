@@ -328,15 +328,11 @@ private fun getKotlinOptions(kotlinCompileTask: Any): PSourceRootKotlinOptions? 
     fun parseBoolean(name: String) = compileArguments.contains("-$name")
     fun parseString(name: String) = compileArguments.dropWhile { it != "-$name" }.drop(1).firstOrNull()
 
-    val addCompilerBuiltins = "Xadd-compiler-builtins"
-    val loadBuiltinsFromDependencies = "Xload-builtins-from-dependencies"
-
     fun isOptionForScriptingCompilerPlugin(option: String)
             = option.startsWith("-Xplugin=") && option.contains("kotlin-scripting-compiler")
 
     val extraArguments = compileArguments.filter {
         it.startsWith("-X") && !isOptionForScriptingCompilerPlugin(it)
-                && it != "-$addCompilerBuiltins" && it != "-$loadBuiltinsFromDependencies"
     }
 
     return PSourceRootKotlinOptions(
@@ -346,8 +342,6 @@ private fun getKotlinOptions(kotlinCompileTask: Any): PSourceRootKotlinOptions? 
             parseString("api-version"),
             parseString("language-version"),
             parseString("jvm-target"),
-            parseBoolean(addCompilerBuiltins),
-            parseBoolean(loadBuiltinsFromDependencies),
             extraArguments
     )
 }
