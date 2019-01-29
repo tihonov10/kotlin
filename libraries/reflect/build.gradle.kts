@@ -44,6 +44,7 @@ val shadows by configurations.creating {
     isTransitive = false
 }
 configurations.getByName("compileOnly").extendsFrom(shadows)
+configurations.getByName("runtime").extendsFrom(shadows)
 val mainJar by configurations.creating
 
 dependencies {
