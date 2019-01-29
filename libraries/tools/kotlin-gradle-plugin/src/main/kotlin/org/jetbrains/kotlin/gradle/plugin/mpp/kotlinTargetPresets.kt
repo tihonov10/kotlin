@@ -7,7 +7,7 @@ package org.jetbrains.kotlin.gradle.plugin.mpp
 
 import org.gradle.api.Action
 import org.gradle.api.Project
-import org.gradle.api.artifacts.Dependency
+import org.gradle.api.artifacts.*
 import org.gradle.api.artifacts.repositories.IvyArtifactRepository
 import org.gradle.api.artifacts.repositories.IvyPatternRepositoryLayout
 import org.gradle.api.artifacts.repositories.RepositoryLayout
@@ -296,6 +296,11 @@ class KotlinNativeTargetPreset(
         }
     }
 
+    // We add default K/N dependencies as files to avoid searching them in remote repos.
+    // Since Gradle 5.1 it's possible to specify what repos are used for searching a particular dependency group.
+    // We can use this feature to declare the default K/N libraries as dependencies placed in a local ivy repository
+    // (see the `setupKotlinNativeVirtualRepo` method).
+    // TODO: Search K/N deps only in the fake ivy repo when we drop support of Gradle versions older than 5.1.
     private fun defaultLibs(target: KonanTarget? = null): List<Dependency> = with(project) {
 
         val relPath = if (target != null) "platform/${target.name}" else "common"
@@ -303,22 +308,11 @@ class KotlinNativeTargetPreset(
         file("$konanHome/klib/$relPath")
             .listFiles { file -> file.isDirectory }
             ?.sortedBy { dir -> dir.name.toLowerCase() }
-            ?.map { dir ->
-                dependencies.create(
-                    mutableMapOf(
-                        "group" to "Kotlin/Native",
-                        "name" to dir.name,
-                        "version" to getKotlinNativeLibraryVersion(dir)
-                    ).also { dependencyNotation ->
-                        if (target != null) dependencyNotation += "classifier" to target.name
-                    }
-                )
-            } ?: emptyList()
+            ?.map { dir -> dependencies.create(files(dir)) } ?: emptyList()
     }
 
     override fun createTarget(name: String): KotlinNativeTarget {
         setupNativeCompiler()
-        setupKotlinNativeVirtualRepo()
 
         val result = KotlinNativeTarget(project, konanTarget).apply {
             targetName = name
