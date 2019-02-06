@@ -1,6 +1,6 @@
 <component name="ArtifactManager">
-  <artifact name="kotlinc">
-    <output-path>$PROJECT_DIR$/out/artifacts/kotlinc</output-path>
+  <artifact build-on-make="true" name="kotlinc">
+    <output-path>$PROJECT_DIR$/dist/kotlinc</output-path>
     <root id="root">
       <element id="directory" name="bin">
         <element id="dir-copy" path="$PROJECT_DIR$/compiler/cli/bin" />

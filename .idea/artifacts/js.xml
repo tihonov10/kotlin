@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact build-on-make="true" name="js">
+    <output-path>$PROJECT_DIR$/dist/js</output-path>
+    <root id="root">
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-js/1.3.30-dev-991/c96e12be5542240f2b079544f57372d4ed9aa317/kotlin-stdlib-js-1.3.30-dev-991.jar" path-in-jar="/kotlin.js" />
+      <element id="extracted-dir" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-js/1.3.30-dev-991/c96e12be5542240f2b079544f57372d4ed9aa317/kotlin-stdlib-js-1.3.30-dev-991.jar" path-in-jar="/kotlin.js.map" />
+    </root>
+  </artifact>
+</component>

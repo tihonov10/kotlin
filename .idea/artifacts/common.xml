@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact build-on-make="true" name="common">
+    <output-path>$PROJECT_DIR$/dist/common</output-path>
+    <root id="root">
+      <element id="file-copy" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-common/1.3.30-dev-991/b8f1c97b2a749987e529de4b2ca2acd826929b36/kotlin-stdlib-common-1.3.30-dev-991-sources.jar" output-file-name="kotlin-stdlib-common-sources.jar" />
+      <element id="file-copy" path="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-common/1.3.30-dev-991/7660e3248eabad8310c9017d990d57958606a61a/kotlin-stdlib-common-1.3.30-dev-991.jar" output-file-name="kotlin-stdlib-common.jar" />
+    </root>
+  </artifact>
+</component>

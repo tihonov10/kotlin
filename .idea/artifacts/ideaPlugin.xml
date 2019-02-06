@@ -1,6 +1,6 @@
 <component name="ArtifactManager">
-  <artifact name="ideaPlugin">
-    <output-path>$PROJECT_DIR$/out/artifacts/ideaPlugin</output-path>
+  <artifact build-on-make="true" name="ideaPlugin">
+    <output-path>$PROJECT_DIR$/dist/artifacts/ideaPlugin</output-path>
     <root id="root">
       <element id="directory" name="Kotlin">
         <element id="directory" name="lib">
