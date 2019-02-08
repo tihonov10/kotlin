@@ -1,3 +1,4 @@
+// IGNORE_BACKEND: JVM_IR
 fun foo() {
     if (0 < 1) {
         System.out?.println()
@@ -5,4 +6,4 @@ fun foo() {
         System.out?.println()
     }
 }
-// 1 LINENUMBER 2
+// 1 LINENUMBER 3
