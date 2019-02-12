@@ -1,0 +1,84 @@
+@kotlin.Metadata
+final class DecoratedNoSuspendKt$box$1$decoratedWork$1$doResume$$inlined$work$1$lambda$1 {
+    synthetic final field $it: kotlin.coroutines.experimental.Continuation
+    inner class DecoratedNoSuspendKt$box$1
+    inner class DecoratedNoSuspendKt$box$1$decoratedWork$1$doResume$$inlined$work$1$lambda$1
+    method <init>(p0: kotlin.coroutines.experimental.Continuation): void
+    public synthetic method invoke(): java.lang.Object
+    public final method invoke(): void
+}
+
+@kotlin.Metadata
+public final class DecoratedNoSuspendKt$box$1$decoratedWork$1$doResume$$inlined$work$1 {
+    field L$0: java.lang.Object
+    inner class DecoratedNoSuspendKt$box$1$decoratedWork$1$doResume$$inlined$work$1
+    public method <init>(p0: kotlin.coroutines.experimental.Continuation): void
+    public final @org.jetbrains.annotations.NotNull method create(@org.jetbrains.annotations.NotNull p0: kotlin.coroutines.experimental.Continuation): kotlin.coroutines.experimental.Continuation
+    public final @org.jetbrains.annotations.Nullable method doResume(@org.jetbrains.annotations.Nullable p0: java.lang.Object, @org.jetbrains.annotations.Nullable p1: java.lang.Throwable): java.lang.Object
+    public final method invoke(p0: java.lang.Object): java.lang.Object
+}
+
+@kotlin.Metadata
+final class DecoratedNoSuspendKt$box$1$decoratedWork$1 {
+    inner class DecoratedNoSuspendKt$box$1
+    inner class DecoratedNoSuspendKt$box$1$decoratedWork$1
+    method <init>(p0: kotlin.coroutines.experimental.Continuation): void
+    public final @org.jetbrains.annotations.NotNull method create(@org.jetbrains.annotations.NotNull p0: kotlin.coroutines.experimental.Continuation): kotlin.coroutines.experimental.Continuation
+    public final @org.jetbrains.annotations.Nullable method doResume(@org.jetbrains.annotations.Nullable p0: java.lang.Object, @org.jetbrains.annotations.Nullable p1: java.lang.Throwable): java.lang.Object
+    public final method invoke(p0: java.lang.Object): java.lang.Object
+}
+
+@kotlin.Metadata
+final class DecoratedNoSuspendKt$box$1 {
+    synthetic final field $res: kotlin.jvm.internal.Ref$IntRef
+    field L$0: java.lang.Object
+    field L$1: java.lang.Object
+    inner class DecoratedNoSuspendKt$box$1
+    inner class DecoratedNoSuspendKt$box$1$decoratedWork$1
+    method <init>(p0: kotlin.jvm.internal.Ref$IntRef, p1: kotlin.coroutines.experimental.Continuation): void
+    public final @org.jetbrains.annotations.NotNull method create(@org.jetbrains.annotations.NotNull p0: kotlin.coroutines.experimental.Continuation): kotlin.coroutines.experimental.Continuation
+    public final @org.jetbrains.annotations.Nullable method doResume(@org.jetbrains.annotations.Nullable p0: java.lang.Object, @org.jetbrains.annotations.Nullable p1: java.lang.Throwable): java.lang.Object
+    public final method invoke(p0: java.lang.Object): java.lang.Object
+}
+
+@kotlin.Metadata
+public final class DecoratedNoSuspendKt$decorate$$inlined$workDecorator$1 {
+    synthetic final field $work: kotlin.jvm.functions.Function1
+    inner class DecoratedNoSuspendKt$decorate$$inlined$workDecorator$1
+    public method <init>(p0: kotlin.jvm.functions.Function1, p1: kotlin.coroutines.experimental.Continuation): void
+    public final @org.jetbrains.annotations.NotNull method create(@org.jetbrains.annotations.NotNull p0: kotlin.coroutines.experimental.Continuation): kotlin.coroutines.experimental.Continuation
+    public final @org.jetbrains.annotations.Nullable method doResume(@org.jetbrains.annotations.Nullable p0: java.lang.Object, @org.jetbrains.annotations.Nullable p1: java.lang.Throwable): java.lang.Object
+    public final method invoke(p0: java.lang.Object): java.lang.Object
+}
+
+@kotlin.Metadata
+public final class DecoratedNoSuspendKt$work$1 {
+    synthetic final field $triggerResume: kotlin.jvm.functions.Function1
+    inner class DecoratedNoSuspendKt$work$1
+    public method <init>(p0: kotlin.jvm.functions.Function1, p1: kotlin.coroutines.experimental.Continuation): void
+    public final @org.jetbrains.annotations.NotNull method create(@org.jetbrains.annotations.NotNull p0: kotlin.coroutines.experimental.Continuation): kotlin.coroutines.experimental.Continuation
+    public final @org.jetbrains.annotations.Nullable method doResume(@org.jetbrains.annotations.Nullable p0: java.lang.Object, @org.jetbrains.annotations.Nullable p1: java.lang.Throwable): java.lang.Object
+    public final method invoke(p0: java.lang.Object): java.lang.Object
+}
+
+@kotlin.Metadata
+public final class DecoratedNoSuspendKt$workDecorator$1 {
+    synthetic final field $work: kotlin.jvm.functions.Function1
+    inner class DecoratedNoSuspendKt$workDecorator$1
+    public method <init>(p0: kotlin.jvm.functions.Function1, p1: kotlin.coroutines.experimental.Continuation): void
+    public final @org.jetbrains.annotations.NotNull method create(@org.jetbrains.annotations.NotNull p0: kotlin.coroutines.experimental.Continuation): kotlin.coroutines.experimental.Continuation
+    public final @org.jetbrains.annotations.Nullable method doResume(@org.jetbrains.annotations.Nullable p0: java.lang.Object, @org.jetbrains.annotations.Nullable p1: java.lang.Throwable): java.lang.Object
+    public final method invoke(p0: java.lang.Object): java.lang.Object
+}
+
+@kotlin.Metadata
+public final class DecoratedNoSuspendKt {
+    inner class DecoratedNoSuspendKt$box$1
+    inner class DecoratedNoSuspendKt$work$1
+    inner class DecoratedNoSuspendKt$workDecorator$1
+    public final static @org.jetbrains.annotations.NotNull method box(): java.lang.String
+    public final static method builder(@org.jetbrains.annotations.NotNull p0: kotlin.jvm.functions.Function1): void
+    public final static @org.jetbrains.annotations.NotNull method decorate(@org.jetbrains.annotations.NotNull p0: kotlin.jvm.functions.Function1): kotlin.jvm.functions.Function1
+    public final static @org.jetbrains.annotations.NotNull method work(@org.jetbrains.annotations.NotNull p0: kotlin.jvm.functions.Function1): kotlin.jvm.functions.Function1
+    public final static @org.jetbrains.annotations.NotNull method workDecorator(@org.jetbrains.annotations.NotNull p0: kotlin.jvm.functions.Function1): kotlin.jvm.functions.Function1
+}

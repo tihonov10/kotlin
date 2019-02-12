@@ -73,7 +73,7 @@ class CoroutineTransformerMethodVisitor(
 ) : TransformationMethodVisitor(delegate, access, name, desc, signature, exceptions) {
 
     private val classBuilderForCoroutineState: ClassBuilder by lazy(obtainClassBuilderForCoroutineState)
-    private val lineNumber = element?.let { CodegenUtil.getLineNumberForElement(it, false) } ?: 0
+    private val lineNumber = CodegenUtil.getLineNumberForElement(element, false) ?: 0
 
     private var continuationIndex = if (isForNamedFunction) -1 else 0
     private var dataIndex = if (isForNamedFunction) -1 else 1

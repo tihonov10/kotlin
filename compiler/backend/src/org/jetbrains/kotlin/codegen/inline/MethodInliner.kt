@@ -183,6 +183,13 @@ class MethodInliner(
                     )
 
                     val transformResult = transformer.doTransform(nodeRemapper)
+                    if (transformResult == null) {
+                        remapper.removeMapping(oldClassName)
+                        if (!transformationInfo!!.wasAlreadyRegenerated) {
+                            result.addNotChangedClass(oldClassName)
+                        }
+                        return
+                    }
                     result.merge(transformResult)
                     result.addChangedType(oldClassName, newClassName)
 
@@ -531,6 +538,7 @@ class MethodInliner(
 
                             var offset = 0
                             var capturesAnonymousObjectThatMustBeRegenerated = false
+                            val crosssinlineIndices = arrayListOf<Int>()
                             for (i in 0 until paramCount) {
                                 val sourceValue = frame.getStack(firstParameterIndex + i)
                                 val lambdaInfo = getLambdaIfExistsAndMarkInstructions(
@@ -541,13 +549,17 @@ class MethodInliner(
                                 } else if (i < argTypes.size && isAnonymousClassThatMustBeRegenerated(argTypes[i])) {
                                     capturesAnonymousObjectThatMustBeRegenerated = true
                                 }
+                                if (sourceValue.insns.singleOrNull().isCrossinlineParam()) {
+                                    crosssinlineIndices.add(i)
+                                }
 
                                 offset += if (i == 0) 1 else argTypes[i - 1].size
                             }
 
                             recordTransformation(
                                 buildConstructorInvocation(
-                                    owner, cur.desc, lambdaMapping, awaitClassReification, capturesAnonymousObjectThatMustBeRegenerated
+                                    owner, cur.desc, lambdaMapping, awaitClassReification, capturesAnonymousObjectThatMustBeRegenerated,
+                                    crosssinlineIndices
                                 )
                             )
                             awaitClassReification = false
@@ -651,6 +663,12 @@ class MethodInliner(
         processingNode.tryCatchBlocks.removeIf { it.isMeaningless() }
 
         return processingNode
+    }
+
+    private fun AbstractInsnNode?.isCrossinlineParam(): Boolean {
+        if (this == null) return false
+        if (opcode == Opcodes.ALOAD) return inliningContext.state.globalInlineContext.isCrossinlineParameter((this as VarInsnNode).`var`)
+        return false
     }
 
     // Replace ALOAD 0
@@ -814,7 +832,8 @@ class MethodInliner(
         desc: String,
         lambdaMapping: Map<Int, LambdaInfo>,
         needReification: Boolean,
-        capturesAnonymousObjectThatMustBeRegenerated: Boolean
+        capturesAnonymousObjectThatMustBeRegenerated: Boolean,
+        crossinlineIndices: List<Int>
     ): AnonymousObjectTransformationInfo {
 
         val info = AnonymousObjectTransformationInfo(
@@ -824,7 +843,8 @@ class MethodInliner(
             desc,
             false,
             inliningContext.nameGenerator,
-            capturesAnonymousObjectThatMustBeRegenerated
+            capturesAnonymousObjectThatMustBeRegenerated,
+            crossinlineIndices
         )
 
         val memoizeAnonymousObject = inliningContext.findAnonymousObjectTransformationInfo(anonymousType)

@@ -6,6 +6,7 @@
 package org.jetbrains.kotlin.codegen.inline
 
 import org.jetbrains.kotlin.codegen.ClassBuilder
+import org.jetbrains.kotlin.codegen.FieldInfo
 import org.jetbrains.kotlin.codegen.state.GenerationState
 
 class RootInliningContext(
@@ -45,6 +46,8 @@ open class InliningContext(
 ) {
 
     val isInliningLambda = lambdaInfo != null
+
+    val capturedCrossinlineParams = arrayListOf<FieldInfo>()
 
     var generateAssertField = false
 

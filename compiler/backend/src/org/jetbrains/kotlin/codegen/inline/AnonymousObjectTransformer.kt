@@ -137,12 +137,14 @@ class AnonymousObjectTransformer(
             methodsToTransform,
             superClassName
         )
+        state.globalInlineContext.enterTransformation()
         for (next in methodsToTransform) {
             val deferringVisitor =
                 when {
                     coroutineTransformer.shouldTransform(next) -> coroutineTransformer.newMethod(next)
                     else -> newMethod(classBuilder, next)
                 }
+
             val funResult = inlineMethodAndUpdateGlobalResult(parentRemapper, deferringVisitor, next, allCapturedParamBuilder, false)
 
             val returnType = Type.getReturnType(next.desc)
@@ -155,6 +157,7 @@ class AnonymousObjectTransformer(
             }
             deferringMethods.add(deferringVisitor)
         }
+        state.globalInlineContext.exitTransformation()
 
         deferringMethods.forEach { method ->
             coroutineTransformer.replaceFakesWithReals(method.intermediate)
@@ -299,6 +302,15 @@ class AnonymousObjectTransformer(
         val capturedIndexes = IntArray(constructorParams.parameters.size)
         var index = 0
         var size = 0
+
+        constructorParams.withIndex().forEach { (i, info) ->
+            if (i in transformationInfo.crossinlineIndices) {
+                inliningContext.capturedCrossinlineParams.add(
+                    // TODO: name
+                    FieldInfo.createForHiddenField(oldObjectType, info.type, "captured crossinline")
+                )
+            }
+        }
 
         //complex processing cause it could have super constructor call params
         for (info in constructorParams) {

@@ -18,8 +18,9 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.resolve.jvm.diagnostics.JvmDeclarationOrigin
 import org.jetbrains.kotlin.utils.addToStdlib.cast
-import org.jetbrains.kotlin.utils.sure
 import org.jetbrains.org.objectweb.asm.Opcodes
+import org.jetbrains.org.objectweb.asm.Type
+import org.jetbrains.org.objectweb.asm.tree.FieldInsnNode
 import org.jetbrains.org.objectweb.asm.tree.MethodInsnNode
 import org.jetbrains.org.objectweb.asm.tree.MethodNode
 import org.jetbrains.org.objectweb.asm.tree.TypeInsnNode
@@ -35,19 +36,45 @@ class CoroutineTransformer(
 
     fun shouldTransform(node: MethodNode): Boolean {
         if (isContinuationNotLambda()) return false
-        val crossinlineParam = crossinlineLambda() ?: return false
+        val crossinlineParam = crossinlineLambda()
         if (inliningContext.isInliningLambda && !inliningContext.isContinuation) return false
         return when {
             isSuspendFunction(node) -> true
             isSuspendLambda(node) -> {
+                // TODO: Now, when we know whether we capture crossinline lambda, try to simplify the checks
                 if (isStateMachine(node)) return false
                 val functionDescriptor =
-                    crossinlineParam.invokeMethodDescriptor.containingDeclaration as? FunctionDescriptor ?: return true
-                !functionDescriptor.isInline
+                    crossinlineParam?.invokeMethodDescriptor?.containingDeclaration as? FunctionDescriptor ?: return true
+                !functionDescriptor.isInline && capturesCrossinline(node)
             }
             else -> false
         }
     }
+
+    /*
+     * The function captures crossinline iff one of the following is true:
+     *   1) There is a field, that represents captured crossinline and we access the field in bytecode
+     *   2) There is a field, that represents captured `this` and we access the field, that represents captured crossinline via this field
+     *
+     * Either way, it ends with something like
+     *   GETFIELD <className>.$action: <functionType>
+     */
+    private fun capturesCrossinline(node: MethodNode): Boolean {
+        val getfields = node.instructions.asSequence().filter { it.opcode == Opcodes.GETFIELD }.map { it as FieldInsnNode }.toList()
+        var context: InliningContext? = inliningContext
+        while (context != null) {
+            if (capturesCrossinlineFromContext(getfields, context)) return true
+            context = context.parent
+        }
+        return false
+    }
+
+    private fun capturesCrossinlineFromContext(getfields: List<FieldInsnNode>, context: InliningContext): Boolean =
+        context.capturedCrossinlineParams.any { param ->
+            getfields.any { insn ->
+                insn.owner == param.ownerInternalName && param.fieldType == Type.getType(insn.desc)
+            }
+        }
 
     private fun isContinuationNotLambda(): Boolean = inliningContext.isContinuation &&
             if (state.languageVersionSettings.isReleaseCoroutines()) superClassName.endsWith("ContinuationImpl")
@@ -59,13 +86,16 @@ class CoroutineTransformer(
 
     private fun isStateMachine(node: MethodNode): Boolean =
         node.instructions.asSequence().any { it.opcode == Opcodes.INVOKESTATIC && (it as MethodInsnNode).name == "getCOROUTINE_SUSPENDED" }
+                && node.instructions.asSequence().any { it.opcode == Opcodes.TABLESWITCH }
 
     private fun isSuspendLambda(node: MethodNode) = isResumeImpl(node)
 
     fun newMethod(node: MethodNode): DeferredMethodVisitor {
-        val element = crossinlineLambda()?.functionWithBodyOrCallableReference.sure {
-            "crossinline lambda should have element"
-        }
+        // Find ANY element to report error about suspension point in monitor on.
+        val element = crossinlineLambda()?.functionWithBodyOrCallableReference
+            ?: inliningContext.root.sourceCompilerForInline.callElement as? KtElement
+            ?: error("crossinline lambda should have element")
+
         return when {
             isResumeImpl(node) -> {
                 assert(!isStateMachine(node)) {
