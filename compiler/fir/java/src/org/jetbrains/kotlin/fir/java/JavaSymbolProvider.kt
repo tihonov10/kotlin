@@ -136,7 +136,7 @@ class JavaSymbolProvider(
         }
     }
 
-    private fun flexibleType(create: (isNullable: Boolean) -> ConeKotlinType): ConeFlexibleType {
+    private fun flexibleType(create: (isNullable: Boolean) -> ConeSymbolBasedType): ConeFlexibleType {
         return ConeFlexibleType(create(false), create(true))
     }
 

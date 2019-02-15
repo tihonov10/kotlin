@@ -20,9 +20,11 @@ import org.jetbrains.kotlin.fir.symbols.ConeCallableSymbol
 import org.jetbrains.kotlin.fir.symbols.ConeFunctionSymbol
 import org.jetbrains.kotlin.fir.symbols.ConePropertySymbol
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
+import org.jetbrains.kotlin.fir.types.ConeTypeContext
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.FirTypeRef
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.types.AbstractStrictEqualityTypeChecker
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class FirClassUseSiteScope(
@@ -40,14 +42,10 @@ class FirClassUseSiteScope(
         return true
     }
 
-    private fun isSubtypeOf(subType: FirTypeRef, superType: FirTypeRef) =
-        isSubtypeOf(subType.cast<FirResolvedTypeRef>().type, superType.cast<FirResolvedTypeRef>().type)
+    val context = object : ConeTypeContext {}
 
-    @Suppress("UNUSED_PARAMETER")
-    private fun isEqualTypes(a: ConeKotlinType, b: ConeKotlinType): Boolean {
-        // TODO: introduce normal type comparison
-        return true
-    }
+    fun isEqualTypes(a: ConeKotlinType, b: ConeKotlinType) = AbstractStrictEqualityTypeChecker.strictEqualTypes(context, a, b)
+    fun isEqualTypes(a: FirTypeRef, b: FirTypeRef) = isEqualTypes(a.cast<FirResolvedTypeRef>().type, b.cast<FirResolvedTypeRef>().type)
 
     private fun isEqualTypes(a: FirTypeRef, b: FirTypeRef) = isEqualTypes(a.cast<FirResolvedTypeRef>().type, b.cast<FirResolvedTypeRef>().type)
 
@@ -82,7 +80,6 @@ class FirClassUseSiteScope(
             val member = (it as AbstractFirBasedSymbol<*>).fir as FirCallableMember
             member.isOverride && self.modality != Modality.FINAL
                     && sameReceivers(member.receiverTypeRef, self.receiverTypeRef)
-                    && isSubtypeOf(member.returnTypeRef, self.returnTypeRef)
                     && similarFunctionsOrBothProperties(member, self)
         } // TODO: two or more overrides for one fun?
         overrides[this] = overriding
