@@ -13,6 +13,8 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
+import org.jetbrains.kotlin.ir.util.getFunctionDeclaration
+import org.jetbrains.kotlin.ir.util.getPropertyGetter
 
 class PrimitiveContainerMemberCallTransformer(private val context: JsIrBackendContext) : CallsTransformer {
     private val intrinsics = context.intrinsics
@@ -65,22 +67,22 @@ class PrimitiveContainerMemberCallTransformer(private val context: JsIrBackendCo
 }
 
 private val IrClassSymbol.sizeProperty
-    get() = owner.declarations.filterIsInstance<IrProperty>().first { it.name.asString() == "size" }.getter!!.symbol
+    get() = getPropertyGetter("size")!!.symbol
 
 private val IrClassSymbol.getFunction
-    get() = owner.declarations.filterIsInstance<IrFunction>().first { it.name.asString() == "get" }.symbol
+    get() = getFunctionDeclaration("get")!!.symbol
 
 private val IrClassSymbol.setFunction
-    get() = owner.declarations.filterIsInstance<IrFunction>().first { it.name.asString() == "set" }.symbol
+    get() = getFunctionDeclaration("set")!!.symbol
 
 private val IrClassSymbol.iterator
-    get() = owner.declarations.filterIsInstance<IrFunction>().first { it.name.asString() == "iterator" }.symbol
+    get() = getFunctionDeclaration("iterator")!!.symbol
 
 private val IrClassSymbol.sizeConstructor
     get() = owner.declarations.filterIsInstance<IrConstructor>().first { it.valueParameters.size == 1 }.symbol
 
 private val IrClassSymbol.lengthProperty
-    get() = owner.declarations.filterIsInstance<IrProperty>().first { it.name.asString() == "length" }.getter!!.symbol
+    get() = getPropertyGetter("length")!!.symbol
 
 private val IrClassSymbol.subSequence
-    get() = owner.declarations.filterIsInstance<IrFunction>().single { it.name.asString() == "subSequence" }.symbol
+    get() = getFunctionDeclaration("subSequence")!!.symbol
