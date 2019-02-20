@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "bin": {
-    "kotlin-js-tests": "lib/cli.js"
+    "kotlin-js-tests": "lib/kotlin-js-test.js"
   },
   "files": [
     "lib/**/*"
