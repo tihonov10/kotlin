@@ -1,11 +1,7 @@
 package org.jetbrains.kotlin.gradle.tasks.js
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.SkipWhenEmpty
-import org.gradle.api.tasks.TaskAction
-import org.jetbrains.kotlin.gradle.KotlinNodeJsTestPlugin
+import org.gradle.api.tasks.*
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -16,13 +12,13 @@ open class KotlinNodeJsTestRuntimeToNodeModulesTask : DefaultTask() {
     @Input
     public var resourceName: String = "kotlin-js-test.js"
 
-    @Input
+    @OutputDirectory
     @SkipWhenEmpty
     public lateinit var nodeModulesDir: File
 
     @TaskAction
     fun copyRuntime() {
-        val testsRuntime = KotlinNodeJsTestPlugin::class.java.getResourceAsStream(resourceName)
+        val testsRuntime = javaClass.getResourceAsStream(resourceName)
         val bin = nodeModulesDir.resolve(".bin").resolve(kotlinNodeJsTestRuntimeBin)
         bin.parentFile.mkdirs()
         Files.copy(

@@ -7,6 +7,8 @@ package org.jetbrains.kotlin.gradle;
 
 import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.testing.AbstractTestTask;
 import org.gradle.process.ProcessForkOptions;
@@ -35,13 +37,12 @@ public abstract class AbstractTestProcessForkTask extends AbstractTestTask imple
         throw new UnsupportedOperationException();
     }
 
-    @SuppressWarnings("WeakerAccess")
+    @Input
     public DefaultProcessForkOptions getForkOptions() {
         return forkOptions;
     }
 
-    @Input
-    @Optional
+    @Internal
     @Override
     public String getExecutable() {
         return getForkOptions().getExecutable();
@@ -62,8 +63,7 @@ public abstract class AbstractTestProcessForkTask extends AbstractTestTask imple
         return getForkOptions().executable(executable);
     }
 
-    @Input
-    @Optional
+    @Internal
     @Override
     public File getWorkingDir() {
         return getForkOptions().getWorkingDir();
@@ -84,13 +84,13 @@ public abstract class AbstractTestProcessForkTask extends AbstractTestTask imple
         return getForkOptions().workingDir(dir);
     }
 
-    @Input
-    @Optional
+    @Internal
     @Override
     public Map<String, Object> getEnvironment() {
         return getForkOptions().getEnvironment();
     }
 
+    @Internal
     public Map<String, String> getActualEnvironment() {
         return getForkOptions().getActualEnvironment();
     }

@@ -8,7 +8,7 @@ import org.gradle.internal.operations.BuildOperationExecutor
 import org.gradle.process.ProcessForkOptions
 import org.gradle.process.internal.ExecHandle
 import org.gradle.process.internal.ExecHandleFactory
-import org.jetbrains.kotlin.gradle.tasks.js.log
+import org.slf4j.LoggerFactory
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
 import kotlin.concurrent.thread
@@ -20,6 +20,8 @@ data class TCServiceMessagesTestExecutionSpec(
     val emulateTestFailureExceptions: Boolean = true,
     val skipRoots: Boolean = true
 ) : TestExecutionSpec
+
+private val log = LoggerFactory.getLogger("org.jetbrains.kotlin.gradle.tasks.testing")
 
 class TCServiceMessagesTestExecutor(
     val execHandleFactory: ExecHandleFactory,

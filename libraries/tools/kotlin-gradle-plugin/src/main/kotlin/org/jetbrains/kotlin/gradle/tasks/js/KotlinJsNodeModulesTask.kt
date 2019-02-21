@@ -1,15 +1,12 @@
 package org.jetbrains.kotlin.gradle.tasks.js
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.SkipWhenEmpty
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.*
 import org.jetbrains.kotlin.gradle.tasks.Kotlin2JsCompile
 import java.io.File
 
 open class KotlinJsNodeModulesTask : DefaultTask() {
-    @Input
+    @OutputDirectory
     @SkipWhenEmpty
     public lateinit var nodeModulesDir: File
 
@@ -19,7 +16,7 @@ open class KotlinJsNodeModulesTask : DefaultTask() {
 
     @TaskAction
     fun copyFromRuntimeClasspath() {
-        project.copy { copy ->
+        project.sync { copy ->
             copy.includeEmptyDirs = false
 
             compile.jsRuntimeClasspath
