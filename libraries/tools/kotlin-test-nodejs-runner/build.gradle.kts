@@ -18,15 +18,13 @@ tasks {
         }
     }
 
-    create<YarnTask>("assembleYarn") {
+    create<YarnTask>("yarnBuild") {
         group = "build"
 
         dependsOn("yarn")
         setWorkingDir(projectDir)
         args = listOf("build")
     }
-
-    getByName("assemble").dependsOn("assembleYarn")
 
     create<Delete>("cleanYarn") {
         group = "build"
@@ -43,6 +41,6 @@ tasks {
 
 artifacts {
     add("archives", projectDir.resolve("lib/kotlin-js-test.js")) {
-        builtBy("assembleYarn")
+        builtBy("yarnBuild")
     }
 }
