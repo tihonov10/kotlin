@@ -49,7 +49,7 @@ internal fun ClassId.toConeKotlinType(
     else ConeClassTypeImpl(symbol, typeArguments, isNullable)
 }
 
-internal fun JavaClassifierType.toConeKotlinType(session: FirSession, isNullable: Boolean = false): ConeKotlinType {
+internal fun JavaClassifierType.toConeKotlinTypeWithNullability(session: FirSession, isNullable: Boolean): ConeKotlinType {
     return when (val classifier = classifier) {
         is JavaClass -> {
             classifier.classId!!.toConeKotlinType(session, typeArguments.map { it.toConeProjection(session) }.toTypedArray(), isNullable)
@@ -66,7 +66,7 @@ internal fun JavaClassifierType.toConeKotlinType(session: FirSession, isNullable
 
 private fun JavaType.toConeProjection(session: FirSession): ConeKotlinTypeProjection {
     if (this is JavaClassifierType) {
-        return toConeKotlinType(session)
+        return toConeKotlinTypeWithNullability(session, isNullable = false)
     }
     return ConeClassErrorType("Unexpected type argument: $this")
 }

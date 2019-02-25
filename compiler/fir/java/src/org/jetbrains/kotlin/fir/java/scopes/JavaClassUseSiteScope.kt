@@ -8,7 +8,7 @@ package org.jetbrains.kotlin.fir.java.scopes
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirNamedFunction
-import org.jetbrains.kotlin.fir.java.toConeKotlinType
+import org.jetbrains.kotlin.fir.java.toConeKotlinTypeWithNullability
 import org.jetbrains.kotlin.fir.java.types.FirJavaTypeRef
 import org.jetbrains.kotlin.fir.scopes.FirScope
 import org.jetbrains.kotlin.fir.scopes.ProcessorAction
@@ -38,7 +38,7 @@ class JavaClassUseSiteScope(
             is FirResolvedTypeRef -> type
             is FirJavaTypeRef -> {
                 val javaType = type
-                if (javaType is JavaClassifierType) javaType.toConeKotlinType(session)
+                if (javaType is JavaClassifierType) javaType.toConeKotlinTypeWithNullability(session, isNullable = false)
                 else ConeKotlinErrorType("Unexpected Java type in JavaClassUseSiteScope: ${javaType::class.java}")
             }
             else -> ConeKotlinErrorType("Unexpected type reference in JavaClassUseSiteScope: ${this::class.java}")

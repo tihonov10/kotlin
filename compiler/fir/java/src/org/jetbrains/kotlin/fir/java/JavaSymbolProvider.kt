@@ -146,7 +146,7 @@ class JavaSymbolProvider(
     }
 
     private fun JavaClassifierType.toFirResolvedTypeRef(): FirResolvedTypeRef {
-        val coneType = this.toConeKotlinType(session)
+        val coneType = this.toConeKotlinTypeWithNullability(session, isNullable = false)
         return FirResolvedTypeRefImpl(
             session, psi = null, type = coneType,
             isMarkedNullable = false, annotations = annotations.map { it.toFirAnnotationCall() }

@@ -26,17 +26,12 @@ import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirFunctionSymbol
 import org.jetbrains.kotlin.fir.transformInplaceWithBeforeOperation
 import org.jetbrains.kotlin.fir.transformSingle
-import org.jetbrains.kotlin.fir.types.ConeClassErrorType
-import org.jetbrains.kotlin.fir.types.ConeFlexibleType
-import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
-import org.jetbrains.kotlin.fir.types.FirTypeRef
+import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.fir.types.impl.FirResolvedTypeRefImpl
 import org.jetbrains.kotlin.fir.visitors.CompositeTransformResult
 import org.jetbrains.kotlin.fir.visitors.compose
 import org.jetbrains.kotlin.load.java.*
-import org.jetbrains.kotlin.load.java.structure.JavaClassifierType
-import org.jetbrains.kotlin.load.java.structure.JavaPrimitiveType
-import org.jetbrains.kotlin.load.java.structure.JavaType
+import org.jetbrains.kotlin.load.java.structure.*
 import org.jetbrains.kotlin.load.java.typeEnhancement.NullabilityQualifier
 import org.jetbrains.kotlin.load.java.typeEnhancement.NullabilityQualifierWithMigrationStatus
 import org.jetbrains.kotlin.load.java.typeEnhancement.PREDEFINED_FUNCTION_ENHANCEMENT_INFO_BY_SIGNATURE
@@ -154,16 +149,12 @@ class FirJavaTypeEnhancementTransformer(session: FirSession) : FirAbstractTreeTr
         return super.transformValueParameter(valueParameter, data)
     }
 
-    private fun JavaType.toResolvedTypeRef(session: FirSession, annotations: List<FirAnnotationCall>): FirResolvedTypeRef {
+    private fun JavaType.toConeKotlinType(session: FirSession): ConeKotlinType {
         return when (this) {
             is JavaClassifierType -> {
-                val upperBoundType = toConeKotlinType(session, isNullable = true)
-                val lowerBoundType = toConeKotlinType(session, isNullable = false)
-                FirResolvedTypeRefImpl(
-                    session, null, ConeFlexibleType(lowerBoundType, upperBoundType),
-                    isMarkedNullable = false,
-                    annotations = annotations
-                )
+                val upperBoundType = toConeKotlinTypeWithNullability(session, isNullable = true)
+                val lowerBoundType = toConeKotlinTypeWithNullability(session, isNullable = false)
+                ConeFlexibleType(lowerBoundType, upperBoundType)
             }
             is JavaPrimitiveType -> {
                 val primitiveType = type
@@ -172,11 +163,29 @@ class FirJavaTypeEnhancementTransformer(session: FirSession) : FirAbstractTreeTr
                     else -> javaName.capitalize()
                 }
                 val classId = ClassId(FqName("kotlin"), FqName(kotlinPrimitiveName), false)
-                val coneType = classId.toConeKotlinType(session, emptyArray(), false)
-                FirResolvedTypeRefImpl(session, null, coneType, isMarkedNullable = false, annotations = annotations)
+                classId.toConeKotlinType(session, emptyArray(), false)
+            }
+            is JavaArrayType -> {
+                val componentType = componentType
+                if (componentType !is JavaPrimitiveType) {
+                    val classId = ClassId(FqName("kotlin"), FqName("Array"), false)
+                    classId.toConeKotlinType(session, arrayOf(componentType.toConeKotlinType(session)), false)
+                } else {
+                    val javaComponentName = componentType.type?.typeName?.asString()?.capitalize() ?: error("Array of voids")
+                    val classId = ClassId(FqName("kotlin"), FqName(javaComponentName + "Array"), false)
+                    classId.toConeKotlinType(session, emptyArray(), false)
+                }
+            }
+            is JavaWildcardType -> bound?.toConeKotlinType(session) ?: run {
+                val classId = ClassId(FqName("kotlin"), FqName("Any"), false)
+                classId.toConeKotlinType(session, emptyArray(), false)
             }
             else -> error("Strange JavaType: ${this::class.java}")
         }
+    }
+
+    private fun JavaType.toResolvedTypeRef(session: FirSession, annotations: List<FirAnnotationCall>): FirResolvedTypeRef {
+        return FirResolvedTypeRefImpl(session, null, toConeKotlinType(session), isMarkedNullable = false, annotations = annotations)
     }
 
     private fun FirTypeRef.toResolvedTypeRef(): FirResolvedTypeRef =
