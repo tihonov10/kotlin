@@ -14,16 +14,21 @@ import org.jetbrains.kotlin.fir.resolve.FirSymbolProvider
 import org.jetbrains.kotlin.fir.resolve.FirTypeResolver
 import org.jetbrains.kotlin.fir.scopes.FirPosition
 import org.jetbrains.kotlin.fir.scopes.FirScope
-import org.jetbrains.kotlin.fir.service
-import org.jetbrains.kotlin.fir.symbols.*
+import org.jetbrains.kotlin.fir.symbols.ConeClassLikeSymbol
+import org.jetbrains.kotlin.fir.symbols.ConeClassSymbol
+import org.jetbrains.kotlin.fir.symbols.ConeClassifierSymbol
+import org.jetbrains.kotlin.fir.symbols.ConeTypeParameterSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirTypeAliasSymbol
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.fir.types.impl.*
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.types.Variance
 
-class FirTypeResolverImpl : FirTypeResolver {
+class FirTypeResolverImpl(firstSession: FirSession) : FirTypeResolver {
 
+    private val symbolProvider by lazy {
+        firstSession.getService(FirSymbolProvider::class)
+    }
 
     private fun List<FirQualifierPart>.toTypeProjections() = flatMap {
         it.typeArguments.map {
@@ -42,18 +47,17 @@ class FirTypeResolverImpl : FirTypeResolver {
         }
     }.toTypedArray()
 
-    private fun ConeSymbol.toConeKotlinType(parts: List<FirQualifierPart>, isNullable: Boolean): ConeKotlinType? {
-
+    private fun ConeClassifierSymbol.toConeKotlinType(parts: List<FirQualifierPart>, isNullable: Boolean): ConeKotlinType? {
         return when (this) {
             is ConeTypeParameterSymbol -> {
                 ConeTypeParameterTypeImpl(this, isNullable)
             }
             is ConeClassSymbol -> {
-                ConeClassTypeImpl(this, parts.toTypeProjections(), isNullable)
+                ConeClassTypeImpl(this.toLookupTag(), parts.toTypeProjections(), isNullable)
             }
             is FirTypeAliasSymbol -> {
                 ConeAbbreviatedTypeImpl(
-                    abbreviationSymbol = this as ConeClassLikeSymbol,
+                    abbreviationLookupTag = this.toLookupTag(),
                     typeArguments = parts.toTypeProjections(),
                     directExpansion = fir.expandedConeType ?: ConeClassErrorType("Unresolved expansion"),
                     isNullable = isNullable
@@ -71,7 +75,7 @@ class FirTypeResolverImpl : FirTypeResolver {
     private fun resolveBuiltInQualified(id: ClassId, session: FirSession): ConeClassLikeSymbol {
         val nameInSession = ClassIdInSession(session, id)
         return implicitBuiltinTypeSymbols.getOrPut(nameInSession) {
-            session.service<FirSymbolProvider>().getClassLikeSymbolByFqName(id)!!
+            symbolProvider.getClassLikeSymbolByFqName(id) as ConeClassLikeSymbol
         }
     }
 
@@ -79,14 +83,14 @@ class FirTypeResolverImpl : FirTypeResolver {
         typeRef: FirTypeRef,
         scope: FirScope,
         position: FirPosition
-    ): ConeSymbol? {
+    ): ConeClassifierSymbol? {
         return when (typeRef) {
-            is FirResolvedTypeRef -> typeRef.coneTypeSafe<ConeSymbolBasedType>()?.symbol
+            is FirResolvedTypeRef -> typeRef.coneTypeSafe<ConeLookupTagBasedType>()?.lookupTag?.let(symbolProvider::getSymbolByLookupTag)
             is FirUserTypeRef -> {
 
                 val qualifierResolver = FirQualifierResolver.getInstance(typeRef.session)
 
-                var resolvedSymbol: ConeSymbol? = null
+                var resolvedSymbol: ConeClassifierSymbol? = null
                 scope.processClassifiersByName(typeRef.qualifier.first().name, position) { symbol ->
                     resolvedSymbol = when (symbol) {
                         is ConeClassLikeSymbol -> {
@@ -113,11 +117,9 @@ class FirTypeResolverImpl : FirTypeResolver {
             }
             else -> null
         }
-
-
     }
 
-    override fun resolveUserType(typeRef: FirUserTypeRef, symbol: ConeSymbol?, scope: FirScope): ConeKotlinType {
+    override fun resolveUserType(typeRef: FirUserTypeRef, symbol: ConeClassifierSymbol?, scope: FirScope): ConeKotlinType {
         symbol ?: return ConeKotlinErrorType("Symbol not found, for `${typeRef.render()}`")
         return symbol.toConeKotlinType(typeRef.qualifier, typeRef.isMarkedNullable)
             ?: ConeKotlinErrorType("Failed to resolve qualified type")
@@ -141,7 +143,7 @@ class FirTypeResolverImpl : FirTypeResolver {
                     (typeRef.receiverTypeRef as FirResolvedTypeRef?)?.type,
                     typeRef.valueParameters.map { it.returnTypeRef.coneTypeUnsafe() },
                     typeRef.returnTypeRef.coneTypeUnsafe(),
-                    resolveBuiltInQualified(KotlinBuiltIns.getFunctionClassId(typeRef.parametersCount), typeRef.session),
+                    resolveBuiltInQualified(KotlinBuiltIns.getFunctionClassId(typeRef.parametersCount), typeRef.session).toLookupTag(),
                     typeRef.isMarkedNullable
                 )
             }
