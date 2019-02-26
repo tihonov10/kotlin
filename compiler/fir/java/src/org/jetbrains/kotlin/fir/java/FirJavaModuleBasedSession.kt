@@ -9,20 +9,18 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.search.GlobalSearchScope
 import org.jetbrains.kotlin.analyzer.ModuleInfo
 import org.jetbrains.kotlin.fir.*
-import org.jetbrains.kotlin.fir.java.transformers.FirJavaTypeEnhancementTransformer
+import org.jetbrains.kotlin.fir.java.scopes.JavaFirScopeProvider
 import org.jetbrains.kotlin.fir.resolve.FirProvider
+import org.jetbrains.kotlin.fir.resolve.FirScopeProvider
 import org.jetbrains.kotlin.fir.resolve.FirSymbolProvider
-import org.jetbrains.kotlin.fir.resolve.impl.FirCompositeSymbolProvider
-import org.jetbrains.kotlin.fir.resolve.impl.FirDependenciesSymbolProviderImpl
-import org.jetbrains.kotlin.fir.resolve.impl.FirLibrarySymbolProviderImpl
+import org.jetbrains.kotlin.fir.resolve.impl.*
 
 class FirJavaModuleBasedSession(
     moduleInfo: ModuleInfo,
     override val sessionProvider: FirProjectSessionProvider,
     scope: GlobalSearchScope,
     dependenciesProvider: FirSymbolProvider? = null
-) : FirModuleBasedSession(moduleInfo), FirSessionWithTransformation {
-
+) : FirModuleBasedSession(moduleInfo) {
     init {
         sessionProvider.sessionCache[moduleInfo] = this
         registerComponent(
@@ -36,6 +34,15 @@ class FirJavaModuleBasedSession(
                 )
             )
         )
+        registerComponent(
+            FirScopeProvider::class,
+            FirCompositeScopeProvider(
+                listOf(
+                    JavaFirScopeProvider(),
+                    FirRegularScopeProvider()
+                )
+            )
+        )
     }
 }
 
@@ -43,7 +50,7 @@ class FirLibrarySession(
     moduleInfo: ModuleInfo,
     override val sessionProvider: FirProjectSessionProvider,
     scope: GlobalSearchScope
-) : FirSessionBase(), FirSessionWithTransformation {
+) : FirSessionBase() {
     init {
         sessionProvider.sessionCache[moduleInfo] = this
         registerComponent(
@@ -53,6 +60,15 @@ class FirLibrarySession(
                     FirLibrarySymbolProviderImpl(this),
                     JavaSymbolProvider(this, sessionProvider.project, scope),
                     FirDependenciesSymbolProviderImpl(this)
+                )
+            )
+        )
+        registerComponent(
+            FirScopeProvider::class,
+            FirCompositeScopeProvider(
+                listOf(
+                    JavaFirScopeProvider(),
+                    FirRegularScopeProvider()
                 )
             )
         )

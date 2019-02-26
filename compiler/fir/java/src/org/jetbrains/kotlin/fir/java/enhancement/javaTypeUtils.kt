@@ -3,14 +3,22 @@
  * that can be found in the license/LICENSE.txt file.
  */
 
-package org.jetbrains.kotlin.fir.java
+package org.jetbrains.kotlin.fir.java.enhancement
 
 import org.jetbrains.kotlin.builtins.jvm.JavaToKotlinClassMap
+import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirValueParameter
+import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
 import org.jetbrains.kotlin.fir.expressions.FirConstExpression
 import org.jetbrains.kotlin.fir.expressions.resolvedFqName
+import org.jetbrains.kotlin.fir.java.createTypeParameterSymbol
+import org.jetbrains.kotlin.fir.java.toConeKotlinTypeWithNullability
+import org.jetbrains.kotlin.fir.java.toNotNullConeKotlinType
+import org.jetbrains.kotlin.fir.java.types.FirJavaTypeRef
+import org.jetbrains.kotlin.fir.resolve.FirSymbolProvider
 import org.jetbrains.kotlin.fir.resolve.constructType
 import org.jetbrains.kotlin.fir.resolve.toTypeProjection
+import org.jetbrains.kotlin.fir.service
 import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.types.*
@@ -19,83 +27,70 @@ import org.jetbrains.kotlin.load.java.JvmAnnotationNames
 import org.jetbrains.kotlin.load.java.descriptors.AnnotationDefaultValue
 import org.jetbrains.kotlin.load.java.descriptors.NullDefaultValue
 import org.jetbrains.kotlin.load.java.descriptors.StringDefaultValue
-import org.jetbrains.kotlin.load.java.structure.JavaType
+import org.jetbrains.kotlin.load.java.structure.*
 import org.jetbrains.kotlin.load.java.typeEnhancement.*
 import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-internal fun FirResolvedTypeRef.enhance(
+internal fun FirJavaTypeRef.enhance(
     qualifiers: (Int) -> JavaTypeQualifiers
 ): FirResolvedTypeRef {
-    return enhancePossiblyFlexible(qualifiers, 0).type
+    return type.enhancePossiblyFlexible(session, annotations, qualifiers, 0)
 }
-
-private class EnhanceTypeResult<T>(val type: T, val subtreeSize: Int, val wereChanges: Boolean) {
-    constructor(type: T) : this(type, 1, false)
-}
-
-private fun <T> T.unchanged(): EnhanceTypeResult<T> = EnhanceTypeResult(this)
 
 // The index in the lambda is the position of the type component:
 // Example: for `A<B, C<D, E>>`, indices go as follows: `0 - A<...>, 1 - B, 2 - C<D, E>, 3 - D, 4 - E`,
 // which corresponds to the left-to-right breadth-first walk of the tree representation of the type.
 // For flexible types, both bounds are indexed in the same way: `(A<B>..C<D>)` gives `0 - (A<B>..C<D>), 1 - B and D`.
-private fun FirResolvedTypeRef.enhancePossiblyFlexible(
+private fun JavaType.enhancePossiblyFlexible(
+    session: FirSession,
+    annotations: List<FirAnnotationCall>,
     qualifiers: (Int) -> JavaTypeQualifiers,
     index: Int
-): EnhanceTypeResult<FirResolvedTypeRef> {
-    val type = type
-    if (type is ConeKotlinErrorType || type is ConeClassErrorType) return this.unchanged()
+): FirResolvedTypeRef {
+    val type = this
     val arguments = typeArguments()
     return when (type) {
-        is ConeFlexibleType -> {
-            val lowerBound = type.lowerBound
-            val lowerResult = lowerBound.enhanceInflexibleType(arguments, TypeComponentPosition.FLEXIBLE_LOWER, qualifiers, index)
-            val upperBound = type.upperBound
-            val upperResult = upperBound.enhanceInflexibleType(arguments, TypeComponentPosition.FLEXIBLE_UPPER, qualifiers, index)
-            assert(lowerResult.subtreeSize == upperResult.subtreeSize) {
-                "Different tree sizes of bounds: " +
-                        "lower = ($lowerBound, ${lowerResult.subtreeSize}), " +
-                        "upper = ($upperBound, ${upperResult.subtreeSize})"
-            }
-            val wereChanges = lowerResult.wereChanges || upperResult.wereChanges
+        is JavaClassifierType -> {
+            val lowerResult = type.enhanceInflexibleType(
+                session, annotations, arguments, TypeComponentPosition.FLEXIBLE_LOWER, qualifiers, index
+            )
+            val upperResult = type.enhanceInflexibleType(
+                session, annotations, arguments, TypeComponentPosition.FLEXIBLE_UPPER, qualifiers, index
+            )
 
-            if (!wereChanges) {
-                this.unchanged()
-            } else {
-                EnhanceTypeResult(
-                    FirResolvedTypeRefImpl(
-                        session, psi,
-                        ConeFlexibleType(lowerResult.type, upperResult.type),
-                        isMarkedNullable, annotations
-                    ), lowerResult.subtreeSize, true
-                )
-            }
+            FirResolvedTypeRefImpl(
+                session, psi = null,
+                type = ConeFlexibleType(lowerResult.type, upperResult.type),
+                isMarkedNullable = false, annotations = annotations
+            )
         }
         else -> {
-            val enhanced = type.enhanceInflexibleType(arguments, TypeComponentPosition.INFLEXIBLE, qualifiers, index)
-            if (!enhanced.wereChanges) {
-                this.unchanged()
-            } else {
-                EnhanceTypeResult(
-                    FirResolvedTypeRefImpl(session, psi, enhanced.type, isMarkedNullable, annotations),
-                    enhanced.subtreeSize, true
-                )
-            }
+            val enhanced = type.toNotNullConeKotlinType(session)
+            FirResolvedTypeRefImpl(session, psi = null, type = enhanced, isMarkedNullable = false, annotations = annotations)
         }
     }
 }
 
-private fun ConeKotlinType.enhanceInflexibleType(
-    arguments: List<FirTypeProjection>,
+private fun JavaType.subtreeSize(): Int {
+    if (this !is JavaClassifierType) return 1
+    return 1 + typeArguments.sumBy { it.subtreeSize() }
+}
+
+private fun JavaClassifierType.enhanceInflexibleType(
+    session: FirSession,
+    annotations: List<FirAnnotationCall>,
+    arguments: List<JavaType>,
     position: TypeComponentPosition,
     qualifiers: (Int) -> JavaTypeQualifiers,
     index: Int
-): EnhanceTypeResult<ConeKotlinType> {
-    val shouldEnhance = position.shouldEnhance()
-    if (!shouldEnhance && typeArguments.isEmpty()) return unchanged()
-
-    val originalSymbol = (this as? ConeSymbolBasedType)?.symbol as? FirBasedSymbol<*> ?: return unchanged()
+): ConeKotlinType {
+    val originalSymbol = when (val classifier = classifier) {
+        is JavaClass -> session.service<FirSymbolProvider>().getClassLikeSymbolByFqName(classifier.classId!!) as FirBasedSymbol<*>
+        is JavaTypeParameter -> createTypeParameterSymbol(session, classifier.name)
+        else -> return toNotNullConeKotlinType(session)
+    }
 
     val effectiveQualifiers = qualifiers(index)
     val (enhancedSymbol, mutabilityChanged) = originalSymbol.enhanceMutability(effectiveQualifiers, position)
@@ -103,25 +98,24 @@ private fun ConeKotlinType.enhanceInflexibleType(
     var globalArgIndex = index + 1
     var wereChanges = mutabilityChanged
     val enhancedArguments = arguments.mapIndexed { localArgIndex, arg ->
-        if (arg is FirStarProjection) {
+        if (arg is JavaWildcardType) {
             globalArgIndex++
             StarProjection
             // TODO: (?) TypeUtils.makeStarProjection(enhancedClassifier.typeConstructor.parameters[localArgIndex])
         } else {
-            arg as FirTypeProjectionWithVariance
-            val argResolvedTypeRef = arg.typeRef as FirResolvedTypeRef
-            val argEnhancedTypeRef = argResolvedTypeRef.enhancePossiblyFlexible(qualifiers, globalArgIndex)
-            wereChanges = wereChanges || argEnhancedTypeRef !== argResolvedTypeRef
-            globalArgIndex += argEnhancedTypeRef.subtreeSize
-            argEnhancedTypeRef.type.type.toTypeProjection(arg.variance)
+            val argEnhancedTypeRef = arg.enhancePossiblyFlexible(session, annotations, qualifiers, globalArgIndex)
+            wereChanges = wereChanges || argEnhancedTypeRef !== arg
+            globalArgIndex += arg.subtreeSize()
+            argEnhancedTypeRef.type.type.toTypeProjection(Variance.INVARIANT)
         }
     }
 
     val (enhancedNullability, _, nullabilityChanged) = getEnhancedNullability(effectiveQualifiers, position)
     wereChanges = wereChanges || nullabilityChanged
 
-    val subtreeSize = globalArgIndex - index
-    if (!wereChanges) return EnhanceTypeResult(this, subtreeSize, wereChanges = false)
+    if (!wereChanges) return toConeKotlinTypeWithNullability(
+        session, isNullable = position == TypeComponentPosition.FLEXIBLE_UPPER
+    )
 
     val enhancedType = enhancedSymbol.constructType(enhancedArguments.toTypedArray(), enhancedNullability)
 
@@ -130,19 +124,19 @@ private fun ConeKotlinType.enhanceInflexibleType(
 //    val nullabilityForWarning = nullabilityChanged && effectiveQualifiers.isNullabilityQualifierForWarning
 //    val result = if (nullabilityForWarning) wrapEnhancement(enhancement) else enhancement
 
-    return EnhanceTypeResult(enhancedType, subtreeSize, wereChanges = true)
+    return enhancedType
 }
 
-private fun ConeKotlinType.getEnhancedNullability(
+private fun getEnhancedNullability(
     qualifiers: JavaTypeQualifiers,
     position: TypeComponentPosition
 ): EnhanceDetailsResult<Boolean> {
-    if (!position.shouldEnhance()) return this.isMarkedNullable.noChange()
+    if (!position.shouldEnhance()) return false.noChange()
 
     return when (qualifiers.nullability) {
         NullabilityQualifier.NULLABLE -> true.enhancedNullability()
         NullabilityQualifier.NOT_NULL -> false.enhancedNullability()
-        else -> this.isMarkedNullable.noChange()
+        else -> false.noChange()
     }
 }
 
@@ -151,6 +145,7 @@ private data class EnhanceDetailsResult<out T>(
     val mutabilityChanged: Boolean = false,
     val nullabilityChanged: Boolean = false
 )
+
 private fun <T> T.noChange() = EnhanceDetailsResult(this)
 private fun <T> T.enhancedNullability() = EnhanceDetailsResult(this, nullabilityChanged = true)
 private fun <T> T.enhancedMutability() = EnhanceDetailsResult(this, mutabilityChanged = true)
@@ -187,12 +182,14 @@ private fun FirBasedSymbol<*>.enhanceMutability(
 
 
 internal data class TypeAndDefaultQualifiers(
-    val type: FirResolvedTypeRef,
+    val type: FirTypeRef,
     val defaultQualifiers: JavaTypeQualifiers?
 )
 
-internal fun FirResolvedTypeRef.typeArguments(): List<FirTypeProjection> =
+internal fun FirTypeRef.typeArguments(): List<FirTypeProjection> =
     (this as? FirUserTypeRef)?.qualifier?.lastOrNull()?.typeArguments.orEmpty()
+
+internal fun JavaType.typeArguments(): List<JavaType> = (this as? JavaClassifierType)?.typeArguments.orEmpty()
 
 fun FirValueParameter.getDefaultValueFromAnnotation(): AnnotationDefaultValue? {
     annotations.find { it.resolvedFqName == JvmAnnotationNames.DEFAULT_VALUE_FQ_NAME }

@@ -8,40 +8,23 @@ package org.jetbrains.kotlin.fir.resolve.transformers
 import org.jetbrains.kotlin.fir.declarations.FirFile
 import org.jetbrains.kotlin.fir.visitors.FirTransformer
 
-open class FirTotalResolveTransformer {
+class FirTotalResolveTransformer {
 
-    private val firstStageTransformers: List<FirTransformer<Nothing?>> = listOf(
+    val transformers: List<FirTransformer<Nothing?>> = listOf(
         FirImportResolveTransformer(),
         FirTypeResolveTransformer(),
-        FirStatusResolveTransformer()
-    )
-
-    private val secondStageTransformers: List<FirTransformer<Nothing?>> = listOf(
+        FirStatusResolveTransformer(),
         FirAccessResolveTransformer()
     )
 
-    protected open fun additionalTransform(files: List<FirFile>) {}
-
-    val transformers: List<FirTransformer<Nothing?>> get() = firstStageTransformers + secondStageTransformers
-
     fun processFile(firFile: FirFile) {
-        for (transformer in firstStageTransformers) {
-            firFile.transform<FirFile, Nothing?>(transformer, null)
-        }
-        additionalTransform(listOf(firFile))
-        for (transformer in secondStageTransformers) {
+        for (transformer in transformers) {
             firFile.transform<FirFile, Nothing?>(transformer, null)
         }
     }
 
     fun processFiles(files: List<FirFile>) {
-        for (transformer in firstStageTransformers) {
-            for (firFile in files) {
-                firFile.transform<FirFile, Nothing?>(transformer, null)
-            }
-        }
-        additionalTransform(files)
-        for (transformer in secondStageTransformers) {
+        for (transformer in transformers) {
             for (firFile in files) {
                 firFile.transform<FirFile, Nothing?>(transformer, null)
             }

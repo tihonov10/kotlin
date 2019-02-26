@@ -3,7 +3,7 @@
  * that can be found in the license/LICENSE.txt file.
  */
 
-package org.jetbrains.kotlin.fir.java
+package org.jetbrains.kotlin.fir.java.enhancement
 
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.fir.declarations.FirRegularClass
@@ -24,7 +24,9 @@ class FirAnnotationTypeQualifierResolver(private val jsr305State: Jsr305State) {
         operator fun component2() = AnnotationTypeQualifierResolver.QualifierApplicabilityType.values().filter(this::isApplicableTo)
 
         private fun isApplicableTo(elementType: AnnotationTypeQualifierResolver.QualifierApplicabilityType) =
-            isApplicableConsideringMask(AnnotationTypeQualifierResolver.QualifierApplicabilityType.TYPE_USE) || isApplicableConsideringMask(elementType)
+            isApplicableConsideringMask(AnnotationTypeQualifierResolver.QualifierApplicabilityType.TYPE_USE) || isApplicableConsideringMask(
+                elementType
+            )
 
         private fun isApplicableConsideringMask(elementType: AnnotationTypeQualifierResolver.QualifierApplicabilityType) =
             (applicability and (1 shl elementType.ordinal)) != 0
@@ -32,7 +34,7 @@ class FirAnnotationTypeQualifierResolver(private val jsr305State: Jsr305State) {
 
     // TODO: memoize this function
     private fun computeTypeQualifierNickname(klass: FirRegularClass): FirAnnotationCall? {
-        if (klass.annotations.none { it.resolvedFqName == TYPE_QUALIFIER_NICKNAME_FQNAME}) return null
+        if (klass.annotations.none { it.resolvedFqName == TYPE_QUALIFIER_NICKNAME_FQNAME }) return null
 
         return klass.annotations.firstNotNullResult(this::resolveTypeQualifierAnnotation)
     }
@@ -60,7 +62,7 @@ class FirAnnotationTypeQualifierResolver(private val jsr305State: Jsr305State) {
         }
 
         return BUILT_IN_TYPE_QUALIFIER_DEFAULT_ANNOTATIONS[annotationCall.resolvedFqName]?.let { (qualifier, applicability) ->
-            val state = resolveJsr305AnnotationState(annotationCall).takeIf { it != ReportLevel.IGNORE } ?: return null
+            val state = resolveJsr305ReportLevel(annotationCall).takeIf { it != ReportLevel.IGNORE } ?: return null
             return NullabilityQualifierWithApplicability(qualifier.copy(isForWarningOnly = state.isWarning), applicability)
         }
     }
@@ -91,15 +93,18 @@ class FirAnnotationTypeQualifierResolver(private val jsr305State: Jsr305State) {
         val typeQualifier = typeQualifierDefaultAnnotatedClass.annotations.firstOrNull { resolveTypeQualifierAnnotation(it) != null }
             ?: return null
 
-        return TypeQualifierWithApplicability(typeQualifier, elementTypesMask)
+        return TypeQualifierWithApplicability(
+            typeQualifier,
+            elementTypesMask
+        )
     }
 
-    fun resolveJsr305AnnotationState(annotationCall: FirAnnotationCall): ReportLevel {
-        resolveJsr305CustomState(annotationCall)?.let { return it }
+    fun resolveJsr305ReportLevel(annotationCall: FirAnnotationCall): ReportLevel {
+        resolveJsr305CustomLevel(annotationCall)?.let { return it }
         return jsr305State.global
     }
 
-    fun resolveJsr305CustomState(annotationCall: FirAnnotationCall): ReportLevel? {
+    fun resolveJsr305CustomLevel(annotationCall: FirAnnotationCall): ReportLevel? {
         jsr305State.user[annotationCall.resolvedFqName?.asString()]?.let { return it }
         return annotationCall.resolvedClass?.migrationAnnotationStatus()
     }

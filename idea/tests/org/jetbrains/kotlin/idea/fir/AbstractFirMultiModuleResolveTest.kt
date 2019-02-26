@@ -12,6 +12,7 @@ import com.intellij.psi.PsiManager
 import com.intellij.psi.search.FileTypeIndex
 import org.jetbrains.kotlin.fir.FirRenderer
 import org.jetbrains.kotlin.fir.builder.RawFirBuilder
+import org.jetbrains.kotlin.fir.declarations.FirDeclaration
 import org.jetbrains.kotlin.fir.declarations.FirFile
 import org.jetbrains.kotlin.fir.dependenciesWithoutSelf
 import org.jetbrains.kotlin.fir.java.FirJavaModuleBasedSession
@@ -19,12 +20,18 @@ import org.jetbrains.kotlin.fir.java.FirLibrarySession
 import org.jetbrains.kotlin.fir.java.FirProjectSessionProvider
 import org.jetbrains.kotlin.fir.java.JavaSymbolProvider
 import org.jetbrains.kotlin.fir.java.declarations.FirJavaClass
-import org.jetbrains.kotlin.fir.java.transformers.FirTotalResolveTransformerWithJava
+import org.jetbrains.kotlin.fir.java.declarations.FirJavaMethod
+import org.jetbrains.kotlin.fir.java.scopes.JavaClassEnhancementScope
 import org.jetbrains.kotlin.fir.resolve.FirProvider
+import org.jetbrains.kotlin.fir.resolve.FirScopeProvider
 import org.jetbrains.kotlin.fir.resolve.FirSymbolProvider
 import org.jetbrains.kotlin.fir.resolve.impl.FirCompositeSymbolProvider
 import org.jetbrains.kotlin.fir.resolve.impl.FirProviderImpl
+import org.jetbrains.kotlin.fir.resolve.transformers.FirTotalResolveTransformer
+import org.jetbrains.kotlin.fir.scopes.ProcessorAction
+import org.jetbrains.kotlin.fir.scopes.impl.FirCompositeScope
 import org.jetbrains.kotlin.fir.service
+import org.jetbrains.kotlin.fir.symbols.impl.FirFunctionSymbol
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.idea.caches.project.IdeaModuleInfo
 import org.jetbrains.kotlin.idea.caches.project.isLibraryClasses
@@ -111,7 +118,7 @@ abstract class AbstractFirMultiModuleResolveTest : AbstractMultiModuleTest() {
             return result!!
         }
 
-        val transformer = FirTotalResolveTransformerWithJava()
+        val transformer = FirTotalResolveTransformer()
         for (file in firFiles) {
             transformer.processFile(file)
             val firFileDump = StringBuilder().also { file.accept(FirRenderer(it), null) }.toString()
@@ -126,7 +133,40 @@ abstract class AbstractFirMultiModuleResolveTest : AbstractMultiModuleTest() {
                 val javaProvider = symbolProvider.providers.filterIsInstance<JavaSymbolProvider>().first()
                 for (javaClass in javaProvider.getJavaTopLevelClasses().sortedBy { it.name }) {
                     if (javaClass !is FirJavaClass || javaClass in processedJavaClasses) continue
-                    javaClass.accept(renderer, null)
+                    val enhancementScope = session.service<FirScopeProvider>().getDeclaredMemberScope(javaClass, session).let {
+                        when (it) {
+                            is FirCompositeScope -> it.scopes.filterIsInstance<JavaClassEnhancementScope>().first()
+                            is JavaClassEnhancementScope -> it
+                            else -> null
+                        }
+                    }
+                    if (enhancementScope == null) {
+                        javaClass.accept(renderer, null)
+                    } else {
+                        renderer.visitMemberDeclaration(javaClass)
+                        renderer.renderSupertypes(javaClass)
+                        renderer.renderInBraces {
+                            val renderedDeclarations = mutableListOf<FirDeclaration>()
+                            for (declaration in javaClass.declarations) {
+                                if (declaration in renderedDeclarations) continue
+                                if (declaration !is FirJavaMethod) {
+                                    declaration.accept(renderer, null)
+                                    renderer.newLine()
+                                    renderedDeclarations += declaration
+                                } else {
+                                    enhancementScope.processFunctionsByName(declaration.name) { symbol ->
+                                        val enhanced = (symbol as? FirFunctionSymbol)?.fir
+                                        if (enhanced != null && enhanced !in renderedDeclarations) {
+                                            enhanced.accept(renderer, null)
+                                            renderer.newLine()
+                                            renderedDeclarations += enhanced
+                                        }
+                                        ProcessorAction.NEXT
+                                    }
+                                }
+                            }
+                        }
+                    }
                     processedJavaClasses += javaClass
                 }
             }

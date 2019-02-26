@@ -8,8 +8,8 @@ package org.jetbrains.kotlin.fir.java.scopes
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirNamedFunction
-import org.jetbrains.kotlin.fir.java.toConeKotlinTypeWithNullability
-import org.jetbrains.kotlin.fir.java.types.FirJavaTypeRef
+import org.jetbrains.kotlin.fir.declarations.FirRegularClass
+import org.jetbrains.kotlin.fir.java.toNotNullConeKotlinType
 import org.jetbrains.kotlin.fir.scopes.FirScope
 import org.jetbrains.kotlin.fir.scopes.ProcessorAction
 import org.jetbrains.kotlin.fir.scopes.impl.FirAbstractProviderBasedScope
@@ -17,32 +17,20 @@ import org.jetbrains.kotlin.fir.scopes.impl.FirClassDeclaredMemberScope
 import org.jetbrains.kotlin.fir.symbols.ConeCallableSymbol
 import org.jetbrains.kotlin.fir.symbols.ConeFunctionSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirFunctionSymbol
-import org.jetbrains.kotlin.fir.types.ConeKotlinErrorType
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
-import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.FirTypeRef
-import org.jetbrains.kotlin.load.java.structure.JavaClassifierType
 import org.jetbrains.kotlin.name.Name
 
 class JavaClassUseSiteScope(
+    klass: FirRegularClass,
     session: FirSession,
     internal val superTypesScope: FirScope,
     private val declaredMemberScope: FirClassDeclaredMemberScope
 ) : FirAbstractProviderBasedScope(session, lookupInFir = true) {
+    internal val symbol = klass.symbol
+
     //base symbol as key, overridden as value
     val overrides = mutableMapOf<ConeFunctionSymbol, ConeFunctionSymbol?>()
-
-    private fun FirTypeRef.toConeKotlinType(): ConeKotlinType =
-        when (this) {
-            // TODO: remove type arguments here and below
-            is FirResolvedTypeRef -> type
-            is FirJavaTypeRef -> {
-                val javaType = type
-                if (javaType is JavaClassifierType) javaType.toConeKotlinTypeWithNullability(session, isNullable = false)
-                else ConeKotlinErrorType("Unexpected Java type in JavaClassUseSiteScope: ${javaType::class.java}")
-            }
-            else -> ConeKotlinErrorType("Unexpected type reference in JavaClassUseSiteScope: ${this::class.java}")
-        }
 
     @Suppress("UNUSED_PARAMETER")
     private fun isSubtypeOf(subType: ConeKotlinType, superType: ConeKotlinType): Boolean {
@@ -51,7 +39,7 @@ class JavaClassUseSiteScope(
     }
 
     private fun isSubtypeOf(subType: FirTypeRef, superType: FirTypeRef) =
-        isSubtypeOf(subType.toConeKotlinType(), superType.toConeKotlinType())
+        isSubtypeOf(subType.toNotNullConeKotlinType(), superType.toNotNullConeKotlinType())
 
     @Suppress("UNUSED_PARAMETER")
     private fun isEqualTypes(a: ConeKotlinType, b: ConeKotlinType): Boolean {
@@ -60,7 +48,7 @@ class JavaClassUseSiteScope(
     }
 
     private fun isEqualTypes(a: FirTypeRef, b: FirTypeRef) =
-        isEqualTypes(a.toConeKotlinType(), b.toConeKotlinType())
+        isEqualTypes(a.toNotNullConeKotlinType(), b.toNotNullConeKotlinType())
 
     private fun isOverriddenFunCheck(member: FirNamedFunction, self: FirNamedFunction): Boolean {
         return member.valueParameters.size == self.valueParameters.size &&

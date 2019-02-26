@@ -3,15 +3,15 @@
  * that can be found in the license/LICENSE.txt file.
  */
 
-package org.jetbrains.kotlin.fir.java
+package org.jetbrains.kotlin.fir.java.enhancement
 
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
-import org.jetbrains.kotlin.fir.java.transformers.FirJavaTypeEnhancementTransformer
 import org.jetbrains.kotlin.load.java.AnnotationTypeQualifierResolver
 import org.jetbrains.kotlin.load.java.lazy.JavaTypeQualifiersByElementType
 import org.jetbrains.kotlin.load.java.lazy.NullabilityQualifierWithApplicability
 import org.jetbrains.kotlin.load.java.lazy.QualifierByApplicabilityType
+import org.jetbrains.kotlin.utils.Jsr305State
 
 class FirJavaEnhancementContext private constructor(
     val session: FirSession,
@@ -27,7 +27,7 @@ class FirJavaEnhancementContext private constructor(
 
 fun extractDefaultNullabilityQualifier(
     typeQualifierResolver: FirAnnotationTypeQualifierResolver,
-    signatureEnhancement: FirJavaTypeEnhancementTransformer,
+    jsr305State: Jsr305State,
     annotationCall: FirAnnotationCall
 ): NullabilityQualifierWithApplicability? {
     typeQualifierResolver.resolveQualifierBuiltInDefaultAnnotation(annotationCall)?.let { return it }
@@ -36,24 +36,24 @@ fun extractDefaultNullabilityQualifier(
         typeQualifierResolver.resolveTypeQualifierDefaultAnnotation(annotationCall)
             ?: return null
 
-    val jsr305State = with(typeQualifierResolver) {
-        resolveJsr305CustomState(annotationCall) ?: resolveJsr305AnnotationState(typeQualifier)
+    val jsr305ReportLevel = with(typeQualifierResolver) {
+        resolveJsr305CustomLevel(annotationCall) ?: resolveJsr305ReportLevel(typeQualifier)
     }
 
-    if (jsr305State.isIgnore) {
+    if (jsr305ReportLevel.isIgnore) {
         return null
     }
 
-    val nullabilityQualifier = signatureEnhancement.extractNullability(
-        typeQualifierResolver, typeQualifier
-    )?.copy(isForWarningOnly = jsr305State.isWarning) ?: return null
+    val nullabilityQualifier = typeQualifier.extractNullability(
+        typeQualifierResolver, jsr305State
+    )?.copy(isForWarningOnly = jsr305ReportLevel.isWarning) ?: return null
 
     return NullabilityQualifierWithApplicability(nullabilityQualifier, applicability)
 }
 
 fun FirJavaEnhancementContext.computeNewDefaultTypeQualifiers(
     typeQualifierResolver: FirAnnotationTypeQualifierResolver,
-    signatureEnhancement: FirJavaTypeEnhancementTransformer,
+    jsr305State: Jsr305State,
     additionalAnnotations: List<FirAnnotationCall>
 ): JavaTypeQualifiersByElementType? {
     if (typeQualifierResolver.disabled) return defaultTypeQualifiers
@@ -62,7 +62,7 @@ fun FirJavaEnhancementContext.computeNewDefaultTypeQualifiers(
         additionalAnnotations.mapNotNull { annotationCall ->
             extractDefaultNullabilityQualifier(
                 typeQualifierResolver,
-                signatureEnhancement,
+                jsr305State,
                 annotationCall
             )
         }
@@ -86,12 +86,12 @@ fun FirJavaEnhancementContext.computeNewDefaultTypeQualifiers(
 
 fun FirJavaEnhancementContext.copyWithNewDefaultTypeQualifiers(
     typeQualifierResolver: FirAnnotationTypeQualifierResolver,
-    signatureEnhancement: FirJavaTypeEnhancementTransformer,
+    jsr305State: Jsr305State,
     additionalAnnotations: List<FirAnnotationCall>
 ): FirJavaEnhancementContext =
     when {
         additionalAnnotations.isEmpty() -> this
         else -> FirJavaEnhancementContext(session) {
-            computeNewDefaultTypeQualifiers(typeQualifierResolver, signatureEnhancement, additionalAnnotations)
+            computeNewDefaultTypeQualifiers(typeQualifierResolver, jsr305State, additionalAnnotations)
         }
     }
