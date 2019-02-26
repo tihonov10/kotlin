@@ -756,7 +756,9 @@ class MethodInliner(
     }
 
     private fun removeRedundantAloadAstoreSequences(node: MethodNode) {
-        val astores = node.instructions.asSequence().filter { it.opcode == Opcodes.ASTORE }.toList()
+        val astores = node.instructions.asSequence()
+            .filter { insn -> insn.opcode == Opcodes.ASTORE && node.localVariables.none { it.index == (insn as VarInsnNode).`var` } }
+            .toList()
         val astoreSources = findSourceInstructions("fake", node, astores, ignoreCopy = false)
         val safeAstoreSources = astoreSources.filter { (astore, sources) ->
             sources.singleOrNull { it.opcode == Opcodes.ALOAD }?.cast<VarInsnNode>()?.`var` == (astore as VarInsnNode).`var`
