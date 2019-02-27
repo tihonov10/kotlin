@@ -759,9 +759,16 @@ class MethodInliner(
         val astores = node.instructions.asSequence()
             .filter { insn -> insn.opcode == Opcodes.ASTORE && node.localVariables.none { it.index == (insn as VarInsnNode).`var` } }
             .toList()
+        if (astores.size <= 1) return
         val astoreSources = findSourceInstructions("fake", node, astores, ignoreCopy = false)
         val safeAstoreSources = astoreSources.filter { (astore, sources) ->
-            sources.singleOrNull { it.opcode == Opcodes.ALOAD }?.cast<VarInsnNode>()?.`var` == (astore as VarInsnNode).`var`
+            sources.singleOrNull { it.opcode == Opcodes.ALOAD }?.cast<VarInsnNode>()?.`var` == (astore as VarInsnNode).`var` &&
+                    // Check that it is captured lambda
+                    astoreSources.filter { (anotherAstore, _) ->
+                        anotherAstore != astore && (anotherAstore as VarInsnNode).`var` == astore.`var`
+                    }.all { (_, initialSources) ->
+                        initialSources.all { it.opcode == Opcodes.GETFIELD && (it as FieldInsnNode).desc.contains("/Function") }
+                    }
         }
         for ((astore, aload) in safeAstoreSources) {
             node.instructions.removeAll(aload)
