@@ -178,24 +178,24 @@ class IrBuiltIns(
     val primitiveTypesWithComparisons = listOf(int, long, float, double)
     val primitiveFloatingPointTypes = listOf(float, double)
 
-    val lessFunByOperandType = primitiveTypesWithComparisons.defineComparisonOperatorForEachType("less")
-    val lessOrEqualFunByOperandType = primitiveTypesWithComparisons.defineComparisonOperatorForEachType("lessOrEqual")
-    val greaterOrEqualFunByOperandType = primitiveTypesWithComparisons.defineComparisonOperatorForEachType("greaterOrEqual")
-    val greaterFunByOperandType = primitiveTypesWithComparisons.defineComparisonOperatorForEachType("greater")
+    val lessFunByOperandType = primitiveTypesWithComparisons.defineComparisonOperatorForEachType(OperatorNames.OPERATOR_NAME_LESS)
+    val lessOrEqualFunByOperandType = primitiveTypesWithComparisons.defineComparisonOperatorForEachType(OperatorNames.OPERATOR_NAME_LESS_OR_EQUAL)
+    val greaterOrEqualFunByOperandType = primitiveTypesWithComparisons.defineComparisonOperatorForEachType(OperatorNames.OPERATOR_NAME_GREATER_OR_EQUAL)
+    val greaterFunByOperandType = primitiveTypesWithComparisons.defineComparisonOperatorForEachType(OperatorNames.OPERATOR_NAME_GREATER)
 
     val ieee754equalsFunByOperandType =
         primitiveFloatingPointTypes.associate {
-            it to defineOperator("ieee754equals", bool, listOf(it.makeNullable(), it.makeNullable()))
+            it to defineOperator(OperatorNames.OPERATOR_NAME_IEEE754_EQUALS, bool, listOf(it.makeNullable(), it.makeNullable()))
         }
 
-    val eqeqeqFun = defineOperator("EQEQEQ", bool, listOf(anyN, anyN))
-    val eqeqFun = defineOperator("EQEQ", bool, listOf(anyN, anyN))
-    val throwNpeFun = defineOperator("THROW_NPE", nothing, listOf())
-    val throwCceFun = defineOperator("THROW_CCE", nothing, listOf())
-    val throwIseFun = defineOperator("THROW_ISE", nothing, listOf())
-    val booleanNotFun = defineOperator("NOT", bool, listOf(bool))
-    val noWhenBranchMatchedExceptionFun = defineOperator("noWhenBranchMatchedException", nothing, listOf())
-    val illegalArgumentExceptionFun = defineOperator("illegalArgumentException", nothing, listOf(string))
+    val eqeqeqFun = defineOperator(OperatorNames.OPERATOR_NAME_EQEQEQ, bool, listOf(anyN, anyN))
+    val eqeqFun = defineOperator(OperatorNames.OPERATOR_NAME_EQEQ, bool, listOf(anyN, anyN))
+    val throwNpeFun = defineOperator(OperatorNames.OPERATOR_NAME_THROW_NPE, nothing, listOf())
+    val throwCceFun = defineOperator(OperatorNames.OPERATOR_NAME_THROW_CCE, nothing, listOf())
+    val throwIseFun = defineOperator(OperatorNames.OPERATOR_NAME_THROW_ISE, nothing, listOf())
+    val booleanNotFun = defineOperator(OperatorNames.OPERATOR_NAME_NOT, bool, listOf(bool))
+    val noWhenBranchMatchedExceptionFun = defineOperator(OperatorNames.OPERATOR_NAME_NO_WHEN_BRANCH_MATCHED_EXCEPTION, nothing, listOf())
+    val illegalArgumentExceptionFun = defineOperator(OperatorNames.OPERATOR_NAME_ILLEGAL_ARGUMENT_EXCEPTION, nothing, listOf(string))
 
     val eqeqeq = eqeqeqFun.descriptor
     val eqeq = eqeqFun.descriptor
@@ -250,5 +250,21 @@ class IrBuiltIns(
 
     companion object {
         val KOTLIN_INTERNAL_IR_FQN = FqName("kotlin.internal.ir")
+    }
+
+    object OperatorNames {
+        const val OPERATOR_NAME_LESS = "less"
+        const val OPERATOR_NAME_LESS_OR_EQUAL = "lessOrEqual"
+        const val OPERATOR_NAME_GREATER = "greater"
+        const val OPERATOR_NAME_GREATER_OR_EQUAL = "greaterOrEqual"
+        const val OPERATOR_NAME_EQEQ = "EQEQ"
+        const val OPERATOR_NAME_EQEQEQ = "EQEQEQ"
+        const val OPERATOR_NAME_IEEE754_EQUALS = "ieee754equals"
+        const val OPERATOR_NAME_NOT = "NOT"
+        const val OPERATOR_NAME_THROW_NPE = "THROW_NPE"
+        const val OPERATOR_NAME_THROW_CCE = "THROW_CCE"
+        const val OPERATOR_NAME_THROW_ISE = "THROW_ISE"
+        const val OPERATOR_NAME_NO_WHEN_BRANCH_MATCHED_EXCEPTION = "noWhenBranchMatchedException"
+        const val OPERATOR_NAME_ILLEGAL_ARGUMENT_EXCEPTION = "illegalArgumentException "
     }
 }
