@@ -14,7 +14,8 @@ class FirTotalResolveTransformer {
         FirImportResolveTransformer(),
         FirTypeResolveTransformer(),
         FirStatusResolveTransformer(),
-        FirAccessResolveTransformer()
+        FirAccessResolveTransformer(),
+        FirBodyResolveTransformerAdapter()
     )
 
     fun processFile(firFile: FirFile) {

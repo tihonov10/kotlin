@@ -31,4 +31,8 @@ class FirValueParameterImpl(
 
         return super<FirAbstractNamedAnnotatedDeclaration>.transformChildren(transformer, data)
     }
+
+    override fun <D> transformReturnTypeRef(transformer: FirTransformer<D>, data: D) {
+        returnTypeRef = returnTypeRef.transformSingle(transformer, data)
+    }
 }
