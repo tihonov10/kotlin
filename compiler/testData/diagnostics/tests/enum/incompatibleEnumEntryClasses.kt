@@ -5,7 +5,7 @@ interface I {
 enum class E1 : I {
     A {
         override fun foo() {
-            <!EQUALITY_NOT_APPLICABLE!>this == E2.A<!>
+            <!EQUALITY_NOT_APPLICABLE, INCOMPATIBLE_ENUM_COMPARISON!>this == E2.A<!>
 
             val q = this
             when (q) {
@@ -69,14 +69,14 @@ fun foo3(e1: Enum<E1>, e2: Enum<E2>, e: Enum<*>) {
     e1 == e2
 
     e1 == E1.A
-    e1 == E2.A
+    <!INCOMPATIBLE_ENUM_COMPARISON!>e1 == E2.A<!>
 
     when (e1) {
         e1 -> {}
         e2 -> {}
         e -> {}
         E1.A -> {}
-        E2.A -> {}
+        <!INCOMPATIBLE_ENUM_COMPARISON!>E2.A<!> -> {}
         else -> {}
     }
 
