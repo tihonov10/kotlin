@@ -1,6 +1,35 @@
 public/*package*/ abstract interface Parent1 : R|java/lang/Object| {
+    public final static property a(val): R|kotlin/Int|
+        public get(): R|kotlin/Int|
+
+    public final static property b(val): R|kotlin/Int|
+        public get(): R|kotlin/Int|
+
 }
 public/*package*/ abstract interface Parent2 : R|java/lang/Object| {
+    public final static property d(val): R|kotlin/Int|
+        public get(): R|kotlin/Int|
+
+    public final static property e(val): R|kotlin/Int|
+        public get(): R|kotlin/Int|
+
 }
 public/*package*/ final enum class StaticMembersInEnumFromParents : R|java/lang/Enum<test/StaticMembersInEnumFromParents>|, R|test/Parent1|, R|test/Parent2| {
+    public final static property ENTRY(val): R|ft<test/StaticMembersInEnumFromParents, test/StaticMembersInEnumFromParents?>|!
+        public get(): R|ft<test/StaticMembersInEnumFromParents, test/StaticMembersInEnumFromParents?>|!
+
+    public open static property b(var): R|kotlin/Int|
+        public get(): R|kotlin/Int|
+        public set(value: R|kotlin/Int|): kotlin/Unit
+
+    public open static property c(var): R|kotlin/Int|
+        public get(): R|kotlin/Int|
+        public set(value: R|kotlin/Int|): kotlin/Unit
+
+    public open static property d(var): R|kotlin/Int|
+        public get(): R|kotlin/Int|
+        public set(value: R|kotlin/Int|): kotlin/Unit
+
+    public open static operator function foo(): R|kotlin/Unit|
+
 }

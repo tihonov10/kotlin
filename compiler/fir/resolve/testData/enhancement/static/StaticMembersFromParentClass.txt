@@ -1,4 +1,36 @@
 public/*package*/ open class Parent : R|java/lang/Object| {
+    public open static property a(var): R|kotlin/Int|
+        public get(): R|kotlin/Int|
+        public set(value: R|kotlin/Int|): kotlin/Unit
+
+    public open static property b(var): R|kotlin/Int|
+        public get(): R|kotlin/Int|
+        public set(value: R|kotlin/Int|): kotlin/Unit
+
+    public open static operator function foo(): R|kotlin/Unit|
+
+    public open static operator function baz(): R|kotlin/Unit|
+
 }
 public/*package*/ open class StaticMembersFromParentClass : R|test/Parent| {
+    public open static property b(var): R|ft<kotlin/String, kotlin/String?>|!
+        public get(): R|ft<kotlin/String, kotlin/String?>|!
+        public set(value: R|ft<kotlin/String, kotlin/String?>|!): kotlin/Unit
+
+    public open static property c(var): R|kotlin/Int|
+        public get(): R|kotlin/Int|
+        public set(value: R|kotlin/Int|): kotlin/Unit
+
+    public open static operator function foo(i: R|kotlin/Int|): R|kotlin/Unit|
+
+    public open static operator function foo(): R|kotlin/Unit|
+
+    public open static operator function bar(): R|kotlin/Unit|
+
+    public open static operator function bar(i: R|kotlin/Int|): R|kotlin/Unit|
+
+    public open static operator function baz(): R|kotlin/Unit|
+
+    public open static operator function baz(i: R|kotlin/Int|): R|kotlin/Unit|
+
 }
