@@ -1,2 +1,19 @@
 public/*package*/ final enum class StaticMembersInEnumFromParents : R|java/lang/Enum<test/StaticMembersInEnumFromParents>|, R|error: Symbol not found, for `test/Parent1`|, R|error: Symbol not found, for `test/Parent2`| {
+    public final static property ENTRY(val): R|ft<test/StaticMembersInEnumFromParents, test/StaticMembersInEnumFromParents?>|!
+        public get(): R|ft<test/StaticMembersInEnumFromParents, test/StaticMembersInEnumFromParents?>|!
+
+    public open static property b(var): R|kotlin/Int|
+        public get(): R|kotlin/Int|
+        public set(value: R|kotlin/Int|): kotlin/Unit
+
+    public open static property c(var): R|kotlin/Int|
+        public get(): R|kotlin/Int|
+        public set(value: R|kotlin/Int|): kotlin/Unit
+
+    public open static property d(var): R|kotlin/Int|
+        public get(): R|kotlin/Int|
+        public set(value: R|kotlin/Int|): kotlin/Unit
+
+    public open static operator function foo(): R|kotlin/Unit|
+
 }

@@ -39,6 +39,7 @@ import org.jetbrains.kotlin.fir.symbols.impl.FirFunctionSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirPropertySymbol
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.psiUtil.getChildrenOfType
 import org.jetbrains.kotlin.test.*
 import org.jetbrains.kotlin.test.KotlinTestUtils.getAnnotationsJar
@@ -141,16 +142,23 @@ abstract class AbstractFirTypeEnhancementTest : KtUsefulTestCase() {
             .uniteWith(TopDownAnalyzerFacadeForJVM.AllJavaSourcesInProjectScope(project))
         val session = createSession(project, scope)
 
-        val classFqNames = psiFile.getChildrenOfType<PsiClass>()
-            .filter { it.name == javaFile.nameWithoutExtension }
-            .map { FqName(it.name!!) }
+        val topPsiClasses = psiFile.getChildrenOfType<PsiClass>().filter { it.name == javaFile.nameWithoutExtension }
 
         val javaFirDump = StringBuilder().also { builder ->
             val renderer = FirRenderer(builder)
             val symbolProvider = session.service<FirSymbolProvider>() as FirCompositeSymbolProvider
             val javaProvider = symbolProvider.providers.filterIsInstance<JavaSymbolProvider>().first()
-            for (classFqName in classFqNames) {
-                javaProvider.getClassLikeSymbolByFqName(ClassId(packageFqName, classFqName, false))!!
+
+            fun processClassWithChildren(psiClass: PsiClass, parentFqName: FqName) {
+                val fqName = parentFqName.child(Name.identifier(psiClass.name!!))
+                val classId = ClassId(packageFqName, fqName, false)
+                javaProvider.getClassLikeSymbolByFqName(classId)!!
+                psiClass.innerClasses.forEach {
+                    processClassWithChildren(psiClass = it, parentFqName = fqName)
+                }
+            }
+            for (psiClass in topPsiClasses) {
+                processClassWithChildren(psiClass, FqName.ROOT)
             }
 
             val processedJavaClasses = mutableSetOf<FirJavaClass>()

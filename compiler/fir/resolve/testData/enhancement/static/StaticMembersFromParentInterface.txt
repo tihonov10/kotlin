@@ -1,2 +1,18 @@
 public/*package*/ open class StaticMembersFromParentInterface : R|java/lang/Object|, R|error: Symbol not found, for `test/Parent1`|, R|error: Symbol not found, for `test/Parent2`| {
+    public open static property b(var): R|ft<kotlin/String, kotlin/String?>|!
+        public get(): R|ft<kotlin/String, kotlin/String?>|!
+        public set(value: R|ft<kotlin/String, kotlin/String?>|!): kotlin/Unit
+
+    public open static property c(var): R|kotlin/Int|
+        public get(): R|kotlin/Int|
+        public set(value: R|kotlin/Int|): kotlin/Unit
+
+    public open static property d(var): R|ft<kotlin/String, kotlin/String?>|!
+        public get(): R|ft<kotlin/String, kotlin/String?>|!
+        public set(value: R|ft<kotlin/String, kotlin/String?>|!): kotlin/Unit
+
+    public open static operator function bar(): R|kotlin/Unit|
+
+    public open static operator function baz(): R|kotlin/Unit|
+
 }
