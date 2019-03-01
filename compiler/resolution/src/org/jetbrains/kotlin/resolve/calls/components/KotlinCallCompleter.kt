@@ -160,12 +160,30 @@ class KotlinCallCompleter(
         // This is questionable as null return type can be only for error call
         if (currentReturnType == null) return ConstraintSystemCompletionMode.PARTIAL
 
-        // Consider call foo(bar(x)), if return type of bar is a proper one, then we can complete resolve for bar => full completion mode
-        // Otherwise, we shouldn't complete bar until we process call foo
-        return if (csBuilder.isProperType(currentReturnType))
-            ConstraintSystemCompletionMode.FULL
-        else
-            ConstraintSystemCompletionMode.PARTIAL
+        return when {
+            // Consider call foo(bar(x)), if return type of bar is a proper one, then we can complete resolve for bar => full completion mode
+            // Otherwise, we shouldn't complete bar until we process call foo
+            csBuilder.isProperType(currentReturnType) -> ConstraintSystemCompletionMode.FULL
+
+            // Nested call is connected with the outer one through the UPPER constraint (returnType <: expectedOuterType)
+            // This means that there will be no new LOWER constraints =>
+            //   it's possible to complete call now if there are proper LOWER constraints
+            csBuilder.isTypeVariable(currentReturnType) ->
+                if (hasProperLowerConstraints(currentReturnType))
+                    ConstraintSystemCompletionMode.FULL
+                else
+                    ConstraintSystemCompletionMode.PARTIAL
+
+            else -> ConstraintSystemCompletionMode.PARTIAL
+        }
+    }
+
+    private fun KotlinResolutionCandidate.hasProperLowerConstraints(typeVariable: UnwrappedType): Boolean {
+        assert(csBuilder.isTypeVariable(typeVariable)) { "$typeVariable is not a type variable" }
+
+        val constructor = typeVariable.constructor
+        val variableWithConstraints = csBuilder.currentStorage().notFixedTypeVariables[constructor] ?: return false
+        return variableWithConstraints.constraints.any { it.kind.isLower() && csBuilder.isProperType(it.type) }
     }
 
     private fun KotlinResolutionCandidate.computeReturnTypeWithSmartCastInfo(
