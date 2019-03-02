@@ -22,4 +22,4 @@ inline fun <K, V, VA : V> MutableMap<K, V>.getOrPut(key: K, defaultValue: (K) ->
 }
 
 fun ConeClassLikeLookupTag.toSymbol(useSiteSession: FirSession): ConeClassifierSymbol? =
-    useSiteSession.getService(FirProvider::class).getSymbolByLookupTag(this)
+    useSiteSession.getService(FirSymbolProvider::class).getSymbolByLookupTag(this)

@@ -29,7 +29,13 @@ class FirTypeAliasImpl(
 ) : FirAbstractMemberDeclaration(session, psi, name, visibility, Modality.FINAL, isExpect, isActual), FirTypeAlias {
 
     init {
+
         symbol.bind(this)
+    }
+
+    override fun replaceExpandTypeRef(typeRef: FirTypeRef): FirTypeAlias {
+        expandedTypeRef = typeRef
+        return this
     }
 
     override fun <D> transformChildren(transformer: FirTransformer<D>, data: D): FirElement {
