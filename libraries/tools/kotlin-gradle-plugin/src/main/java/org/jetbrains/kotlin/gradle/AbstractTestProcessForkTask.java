@@ -37,8 +37,8 @@ public abstract class AbstractTestProcessForkTask extends AbstractTestTask imple
         throw new UnsupportedOperationException();
     }
 
-    @Input
-    public DefaultProcessForkOptions getForkOptions() {
+    @Internal
+    protected ProcessForkOptions getForkOptions() {
         return forkOptions;
     }
 
@@ -88,11 +88,6 @@ public abstract class AbstractTestProcessForkTask extends AbstractTestTask imple
     @Override
     public Map<String, Object> getEnvironment() {
         return getForkOptions().getEnvironment();
-    }
-
-    @Internal
-    public Map<String, String> getActualEnvironment() {
-        return getForkOptions().getActualEnvironment();
     }
 
     @Override

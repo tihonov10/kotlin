@@ -64,6 +64,7 @@ dependencies {
     runtime(projectRuntimeJar(":kotlin-scripting-compiler-embeddable"))
     runtime(project(":kotlin-reflect"))
 
+    jarContents(compileOnly(intellijDep()) { includeJars("serviceMessages") })
     jarContents(projectArchives(":kotlin-test-nodejs-runner"))
 
     // com.android.tools.build:gradle has ~50 unneeded transitive dependencies
@@ -83,7 +84,13 @@ dependencies {
 }
 
 runtimeJar(rewriteDepsToShadedCompiler(jar)) {
-    from(jarContents)
+    jarContents.asFileTree.forEach {
+        if (it.endsWith(".jar")) {
+            from(zipTree(it))
+        } else {
+            from(it)
+        }
+    }
 }
 
 tasks {

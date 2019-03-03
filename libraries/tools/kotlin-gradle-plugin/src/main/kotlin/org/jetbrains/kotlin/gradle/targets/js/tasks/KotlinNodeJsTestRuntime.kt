@@ -15,7 +15,7 @@ const val kotlinNodeJsTestRuntimeBin: String = "kotlin-js-test"
 
 open class KotlinNodeJsTestRuntimeToNodeModulesTask : DefaultTask() {
     @Input
-    public var resourceName: String = "kotlin-js-test.js"
+    public var resourceName: String = "/kotlin-js-test.js"
 
     @OutputDirectory
     @SkipWhenEmpty
@@ -23,7 +23,7 @@ open class KotlinNodeJsTestRuntimeToNodeModulesTask : DefaultTask() {
 
     @TaskAction
     fun copyRuntime() {
-        val testsRuntime = javaClass.getResourceAsStream(resourceName)
+        val testsRuntime = javaClass.getResourceAsStream(resourceName) ?: error("Cannot find `$resourceName` in resources")
         val bin = nodeModulesDir.resolve(".bin").resolve(kotlinNodeJsTestRuntimeBin)
         bin.parentFile.mkdirs()
         Files.copy(

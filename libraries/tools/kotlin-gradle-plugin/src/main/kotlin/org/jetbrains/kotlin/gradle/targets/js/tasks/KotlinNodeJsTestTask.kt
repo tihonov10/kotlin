@@ -61,9 +61,9 @@ open class KotlinNodeJsTestTask : AbstractTestProcessForkTask() {
         buildOperationExecutor
     )
 
-    fun doCreateSpec(project: Project): TCServiceMessagesTestExecutionSpec {
+    private fun doCreateSpec(project: Project): TCServiceMessagesTestExecutionSpec {
         val extendedForkOptions = DefaultProcessForkOptions(getFileResolver())
-        getForkOptions().copyTo(extendedForkOptions)
+        forkOptions.copyTo(extendedForkOptions)
 
         if (extendedForkOptions.executable == null) {
             extendedForkOptions.executable = getNodeJsFromMooworkPlugin(project)

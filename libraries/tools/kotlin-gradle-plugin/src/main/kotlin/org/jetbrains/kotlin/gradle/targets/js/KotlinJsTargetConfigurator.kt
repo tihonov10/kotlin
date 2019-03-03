@@ -5,11 +5,13 @@
 
 package org.jetbrains.kotlin.gradle.targets.js
 
+import org.gradle.api.Project
+import org.gradle.api.internal.plugins.DslObject
 import org.gradle.api.plugins.JavaBasePlugin
+import org.gradle.testing.base.plugins.TestingBasePlugin
+import org.jetbrains.kotlin.gradle.plugin.*
 import org.jetbrains.kotlin.gradle.plugin.Kotlin2JsSourceSetProcessor
-import org.jetbrains.kotlin.gradle.plugin.KotlinCompilationToRunnableFiles
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetProcessor
-import org.jetbrains.kotlin.gradle.plugin.KotlinTargetConfigurator
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJsCompilation
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinOnlyTarget
 import org.jetbrains.kotlin.gradle.targets.js.tasks.KotlinJsNodeModulesTask
@@ -28,25 +30,30 @@ class KotlinJsTargetConfigurator(kotlinPluginVersion: String) :
 
     override fun configureTest(target: KotlinOnlyTarget<KotlinJsCompilation>) {
         target.compilations.all {
-            configureTest(it)
+            it.compileKotlinTask.kotlinOptions.moduleKind = "umd"
+
+            if (it.name == KotlinCompilation.TEST_COMPILATION_NAME) {
+                configureTest(it)
+            }
         }
+
+        KotlinJsProjectConventions().ensureConfigured(target.project)
     }
 
     private fun configureTest(compilation: KotlinCompilationToRunnableFiles<*>) {
         val target = compilation.target
         val project = target.project
-        val name = compilation.name
         val compileTestKotlin2Js = compilation.compileKotlinTask as Kotlin2JsCompile
         val isDefaultTarget = compilation.name.isBlank()
 
         fun camelCaseName(prefix: String): String {
             return if (isDefaultTarget) prefix
-            else name + prefix.capitalize()
+            else target.name + compilation.name.capitalize() + prefix.capitalize()
         }
 
         fun underscoredName(prefix: String): String {
             return if (isDefaultTarget) prefix
-            else "${name}_$prefix"
+            else "${target.name}_${compilation.name}_$prefix"
         }
 
         val nodeModulesDir = project.buildDir.resolve(underscoredName("node_modules"))
@@ -57,7 +64,7 @@ class KotlinJsTargetConfigurator(kotlinPluginVersion: String) :
             it.dependsOn(compileTestKotlin2Js)
 
             it.nodeModulesDir = nodeModulesDir
-            it.compile = compileTestKotlin2Js
+            it.compileTaskName = compileTestKotlin2Js.name
         }
 
         val nodeModulesTestRuntimeTask = project.tasks.create(

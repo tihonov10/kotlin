@@ -17,13 +17,14 @@ open class KotlinJsNodeModulesTask : DefaultTask() {
 
     @Input
     @SkipWhenEmpty
-    public lateinit var compile: Kotlin2JsCompile
+    public lateinit var compileTaskName: String
 
     @TaskAction
     fun copyFromRuntimeClasspath() {
-        project.sync { copy ->
+        project.copy { copy ->
             copy.includeEmptyDirs = false
 
+            val compile = project.tasks.getByName(compileTaskName) as Kotlin2JsCompile
             compile.jsRuntimeClasspath
                 .forEach {
                     if (it.isZip) copy.from(project.zipTree(it))
