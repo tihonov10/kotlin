@@ -1,7 +1,7 @@
 @R|FieldsAreNullable|() public open class A : R|java/lang/Object| {
-    public open property field(var): R|ft<kotlin/String, kotlin/String?>|!
-        public get(): R|ft<kotlin/String, kotlin/String?>|!
-        public set(value: R|ft<kotlin/String, kotlin/String?>|!): kotlin/Unit
+    public open property field(var): R|ft<kotlin/String?, kotlin/String?>|?
+        public get(): R|ft<kotlin/String?, kotlin/String?>|?
+        public set(value: R|ft<kotlin/String?, kotlin/String?>|?): kotlin/Unit
 
     @R|javax/annotation/Nonnull|() public open property nonNullField(var): R|ft<kotlin/String, kotlin/String>|
         public get(): R|ft<kotlin/String, kotlin/String>|
