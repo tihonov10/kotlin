@@ -42,7 +42,7 @@ class JavaClassEnhancementScope(
 ) : FirScope {
     private val owner: FirRegularClass get() = useSiteScope.symbol.fir
 
-    private val jsr305State: Jsr305State = session.jsr305State ?: Jsr305State.DISABLED
+    private val jsr305State: Jsr305State = session.jsr305State ?: Jsr305State.DEFAULT
 
     private val typeQualifierResolver = FirAnnotationTypeQualifierResolver(jsr305State)
 
