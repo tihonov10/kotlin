@@ -10,9 +10,7 @@ import com.intellij.openapi.extensions.Extensions
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.util.text.StringUtilRt
-import com.intellij.psi.PsiClass
-import com.intellij.psi.PsiElementFinder
-import com.intellij.psi.PsiFileFactory
+import com.intellij.psi.*
 import com.intellij.psi.impl.PsiFileFactoryImpl
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.testFramework.LightVirtualFile
@@ -99,10 +97,6 @@ abstract class AbstractFirTypeEnhancementTest : KtUsefulTestCase() {
     fun doTest(path: String) {
         val javaFile = File(path)
         val javaLines = javaFile.readLines()
-        val packageFqName =
-            javaLines.firstOrNull { it.startsWith("package") }?.substringAfter("package")?.trim()?.substringBefore(";")?.let { name ->
-                FqName(name)
-            } ?: FqName.ROOT
 //        LoadDescriptorUtil.compileJavaWithAnnotationsJar(listOf(javaFile), compiledDir)
 
         val srcFiles = KotlinTestUtils.createTestFiles<Void, File>(
@@ -110,8 +104,16 @@ abstract class AbstractFirTypeEnhancementTest : KtUsefulTestCase() {
             object : KotlinTestUtils.TestFileFactoryNoModules<File>() {
                 override fun create(fileName: String, text: String, directives: Map<String, String>): File {
                     var currentDir = javaFilesDir
-                    for (segment in packageFqName.pathSegments()) {
-                        currentDir = File(currentDir, segment.asString()).apply { mkdir() }
+                    if ("/" !in fileName) {
+                        val packageFqName =
+                            text.split("\n").firstOrNull {
+                                it.startsWith("package")
+                            }?.substringAfter("package")?.trim()?.substringBefore(";")?.let { name ->
+                                FqName(name)
+                            } ?: FqName.ROOT
+                        for (segment in packageFqName.pathSegments()) {
+                            currentDir = File(currentDir, segment.asString()).apply { mkdir() }
+                        }
                     }
                     val targetFile = File(currentDir, fileName)
                     try {
@@ -150,9 +152,13 @@ abstract class AbstractFirTypeEnhancementTest : KtUsefulTestCase() {
             val javaProvider = symbolProvider.providers.filterIsInstance<JavaSymbolProvider>().first()
 
             fun processClassWithChildren(psiClass: PsiClass, parentFqName: FqName) {
+                val psiFile = psiClass.containingFile
+                val packageStatement = psiFile.children.filterIsInstance<PsiPackageStatement>().firstOrNull()
+                val packageName = packageStatement?.packageName
                 val fqName = parentFqName.child(Name.identifier(psiClass.name!!))
-                val classId = ClassId(packageFqName, fqName, false)
-                javaProvider.getClassLikeSymbolByFqName(classId)!!
+                val classId = ClassId(packageName?.let { FqName(it) } ?: FqName.ROOT, fqName, false)
+                javaProvider.getClassLikeSymbolByFqName(classId)
+                    ?: throw AssertionError(classId.asString())
                 psiClass.innerClasses.forEach {
                     processClassWithChildren(psiClass = it, parentFqName = fqName)
                 }
