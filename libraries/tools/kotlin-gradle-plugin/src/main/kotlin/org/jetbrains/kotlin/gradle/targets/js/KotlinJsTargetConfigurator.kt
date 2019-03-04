@@ -5,10 +5,8 @@
 
 package org.jetbrains.kotlin.gradle.targets.js
 
-import org.gradle.api.Project
-import org.gradle.api.internal.plugins.DslObject
 import org.gradle.api.plugins.JavaBasePlugin
-import org.gradle.testing.base.plugins.TestingBasePlugin
+import org.gradle.api.tasks.Delete
 import org.jetbrains.kotlin.gradle.plugin.*
 import org.jetbrains.kotlin.gradle.plugin.Kotlin2JsSourceSetProcessor
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetProcessor
@@ -46,19 +44,19 @@ class KotlinJsTargetConfigurator(kotlinPluginVersion: String) :
         val compileTestKotlin2Js = compilation.compileKotlinTask as Kotlin2JsCompile
         val isDefaultTarget = compilation.name.isBlank()
 
-        fun camelCaseName(prefix: String): String {
+        fun camelCaseTargetName(prefix: String): String {
             return if (isDefaultTarget) prefix
-            else target.name + compilation.name.capitalize() + prefix.capitalize()
+            else target.name + prefix.capitalize()
         }
 
-        fun underscoredName(prefix: String): String {
+        fun underscoredCompilationName(prefix: String): String {
             return if (isDefaultTarget) prefix
             else "${target.name}_${compilation.name}_$prefix"
         }
 
-        val nodeModulesDir = project.buildDir.resolve(underscoredName("node_modules"))
+        val nodeModulesDir = project.buildDir.resolve(underscoredCompilationName("node_modules"))
         val nodeModulesTask = project.tasks.create(
-            camelCaseName("kotlinJsNodeModules"),
+            camelCaseTargetName("kotlinJsNodeModules"),
             KotlinJsNodeModulesTask::class.java
         ) {
             it.dependsOn(compileTestKotlin2Js)
@@ -68,7 +66,7 @@ class KotlinJsTargetConfigurator(kotlinPluginVersion: String) :
         }
 
         val nodeModulesTestRuntimeTask = project.tasks.create(
-            camelCaseName("kotlinJsNodeModulesTestRuntime"),
+            camelCaseTargetName("kotlinJsNodeModulesTestRuntime"),
             KotlinNodeJsTestRuntimeToNodeModulesTask::class.java
         ) {
             it.nodeModulesDir = nodeModulesDir
@@ -76,7 +74,7 @@ class KotlinJsTargetConfigurator(kotlinPluginVersion: String) :
 
         val testJs: KotlinNodeJsTestTask =
             if (isDefaultTarget) project.tasks.create("testJs", KotlinNodeJsTestTask::class.java)
-            else project.tasks.replace(camelCaseName("test"), KotlinNodeJsTestTask::class.java)
+            else project.tasks.replace(camelCaseTargetName("test"), KotlinNodeJsTestTask::class.java)
 
         testJs.also {
             it.group = "verification"
@@ -84,6 +82,11 @@ class KotlinJsTargetConfigurator(kotlinPluginVersion: String) :
 
             it.nodeModulesDir = nodeModulesDir
             it.nodeModulesToLoad = setOf(compileTestKotlin2Js.outputFile.name)
+        }
+
+        val cleanTestJs = project.tasks.register("clean" + testJs.name.capitalize(), Delete::class.java) {
+            @Suppress("UnstableApiUsage")
+            it.delete(testJs.binResultsDir)
         }
 
         project.afterEvaluate {
