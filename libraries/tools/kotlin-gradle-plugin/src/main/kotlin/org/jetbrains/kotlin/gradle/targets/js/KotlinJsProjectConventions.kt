@@ -8,20 +8,22 @@ package org.jetbrains.kotlin.gradle.targets.js
 import org.gradle.api.Project
 import org.gradle.api.internal.plugins.DslObject
 import org.gradle.testing.base.plugins.TestingBasePlugin
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
+import org.jetbrains.kotlin.gradle.plugin.mpp.multiplatformExtension
 import org.jetbrains.kotlin.gradle.targets.js.tasks.KotlinNodeJsTestTask
 
 class KotlinJsProjectConventions {
-    class Flag
-
     fun ensureConfigured(project: Project) {
-        if (project.extensions.findByType(Flag::class.java) == null) {
-            project.extensions.add(Flag::class.java, "kotlinJsConventions", Flag())
-
-            configureConventions(project)
+        var configured = false
+        project.multiplatformExtension!!.targets.whenObjectAdded { target ->
+            if (target.platformType == KotlinPlatformType.js && !configured) {
+                configureConventions(project)
+                configured = true
+            }
         }
     }
 
-    fun configureConventions(project: Project) {
+    private fun configureConventions(project: Project) {
         @Suppress("UnstableApiUsage")
         project.tasks.withType(KotlinNodeJsTestTask::class.java).configureEach {
             configureTestDefaults(it, project)
