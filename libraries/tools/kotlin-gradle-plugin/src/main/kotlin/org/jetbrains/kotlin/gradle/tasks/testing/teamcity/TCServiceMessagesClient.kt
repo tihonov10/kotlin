@@ -106,9 +106,20 @@ class TCServiceMessagesClient(
     }
 
     @PublishedApi
+    internal inline fun Node.group(ts: Long, name: String, contents: () -> Unit) {
+        val group = open(ts, GroupNode(this@group, name))
+        contents()
+        assert(close(System.currentTimeMillis(), name) === group)
+    }
+
+    @PublishedApi
     internal fun open(ts: Long, new: Node): Node = new.also {
         if (!it.skipReporting) {
             results.started(it.descriptor, TestStartEvent(ts, it.reportingParent?.descriptor?.id))
+        } else {
+            if (it.reportingParent == null && settings.replaceRootSuiteName != null) {
+                results.started(it.descriptor, TestStartEvent(ts, null))
+            }
         }
         push(it)
     }
@@ -118,6 +129,10 @@ class TCServiceMessagesClient(
         check(it.name == name)
         if (!it.skipReporting) {
             results.completed(it.descriptor.id, TestCompleteEvent(ts, it.resultType))
+        } else {
+            if (it.reportingParent == null && settings.replaceRootSuiteName != null) {
+                results.completed(it.descriptor.id, TestCompleteEvent(ts, it.resultType))
+            }
         }
     }
 
@@ -143,20 +158,42 @@ class TCServiceMessagesClient(
     fun receive(message: ServiceMessage) {
         when (message) {
             is TestSuiteStarted -> open(message.ts, GroupNode(leaf, message.suiteName))
-            is TestStarted -> open(message.ts, TestNode(requireGroup(), message.testName))
+            is TestStarted -> {
+                val appendLeafSuite = settings.appendLeaf
+                if (appendLeafSuite != null) {
+                    val group = open(message.ts, GroupNode(requireGroup(), message.testName))
+                    open(message.ts, TestNode(group, appendLeafSuite))
+                } else {
+                    open(message.ts, TestNode(requireGroup(), message.testName))
+                }
+            }
             is TestStdOut -> results.output(requireTest().descriptor, DefaultTestOutputEvent(StdOut, message.stdOut))
             is TestStdErr -> results.output(requireTest().descriptor, DefaultTestOutputEvent(StdErr, message.stdErr))
             is TestFailed -> requireTest().failure(message)
-            is TestFinished -> close(message.ts, message.testName)
+            is TestFinished -> {
+                val appendLeafSuite = settings.appendLeaf
+                if (appendLeafSuite != null) {
+                    close(System.currentTimeMillis(), appendLeafSuite)
+                }
+
+                close(message.ts, message.testName)
+            }
             is TestIgnored -> {
                 if (message.attributes["suite"] == "true") {
                     // non standard property for dealing with ignored test suites without visiting all inner tests
-                    open(message.ts, GroupNode(requireGroup(), message.testName)).also {
-                        check(close(message.ts, message.testName) === it)
-                    }
+                    requireGroup().group(message.ts, message.testName) {}
                 } else {
-                    open(message.ts, TestNode(requireGroup(), message.testName, ignored = true)).also {
-                        check(close(message.ts, message.testName) === it)
+                    val appendLeafSuite = settings.appendLeaf
+                    if (appendLeafSuite != null) {
+                        requireGroup().group(message.ts, message.testName) {
+                            open(message.ts, TestNode(requireGroup(), appendLeafSuite, ignored = true)).also {
+                                check(close(message.ts, appendLeafSuite) === it)
+                            }
+                        }
+                    } else {
+                        open(message.ts, TestNode(requireGroup(), message.testName, ignored = true)).also {
+                            check(close(message.ts, message.testName) === it)
+                        }
                     }
                 }
             }

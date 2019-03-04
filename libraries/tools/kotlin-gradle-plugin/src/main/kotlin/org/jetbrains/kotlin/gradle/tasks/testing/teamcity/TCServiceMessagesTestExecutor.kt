@@ -14,10 +14,12 @@ import java.io.PipedOutputStream
 import kotlin.concurrent.thread
 
 data class TCServiceMessagesTestExecutionSpec(
-    val rootNodeName: String,
-    val forkOptions: ProcessForkOptions,
-    val args: List<String>,
-    val skipRoots: Boolean = true
+        val rootNodeName: String,
+        val forkOptions: ProcessForkOptions,
+        val args: List<String>,
+        val skipRoots: Boolean = true,
+        val replaceRootSuiteName: String? = null,
+        val appendLeaf: String? = null
 ) : TestExecutionSpec
 
 private val log = LoggerFactory.getLogger("org.jetbrains.kotlin.gradle.tasks.testing")

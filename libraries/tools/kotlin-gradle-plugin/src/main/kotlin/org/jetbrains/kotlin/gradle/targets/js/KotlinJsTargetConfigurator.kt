@@ -80,6 +80,9 @@ class KotlinJsTargetConfigurator(kotlinPluginVersion: String) :
             it.group = "verification"
             it.dependsOn(nodeModulesTask, nodeModulesTestRuntimeTask)
 
+            if (!isDefaultTarget) {
+                it.targetName = target.name
+            }
             it.nodeModulesDir = nodeModulesDir
             it.nodeModulesToLoad = setOf(compileTestKotlin2Js.outputFile.name)
         }

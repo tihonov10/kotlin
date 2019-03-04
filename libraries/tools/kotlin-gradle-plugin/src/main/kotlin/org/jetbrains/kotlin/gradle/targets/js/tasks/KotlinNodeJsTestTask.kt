@@ -22,7 +22,11 @@ import javax.inject.Inject
 open class KotlinNodeJsTestTask : AbstractTestProcessForkTask() {
     @Input
     var ignoredTestSuites: IgnoredTestSuites =
-        IgnoredTestSuites.showWithContents
+            IgnoredTestSuites.showWithContents
+
+    @Input
+    @Optional
+    var targetName: String? = null
 
     @Input
     var excludes = mutableSetOf<String>()
@@ -46,22 +50,7 @@ open class KotlinNodeJsTestTask : AbstractTestProcessForkTask() {
         filterExt.isFailOnNoMatchingTests = false
     }
 
-    override fun createTestExecutionSpec(): TCServiceMessagesTestExecutionSpec = doCreateSpec(project)
-
-    @get:Inject
-    open val execHandleFactory: ExecHandleFactory
-        get() = error("should be injected by gradle")
-
-    private val finalTestRuntimeNodeModule: File
-        get() = testRuntimeNodeModule
-            ?: nodeModulesDir!!.resolve(".bin").resolve(kotlinNodeJsTestRuntimeBin)
-
-    override fun createTestExecuter() = TCServiceMessagesTestExecutor(
-        execHandleFactory,
-        buildOperationExecutor
-    )
-
-    private fun doCreateSpec(project: Project): TCServiceMessagesTestExecutionSpec {
+    override fun createTestExecutionSpec(): TCServiceMessagesTestExecutionSpec {
         val extendedForkOptions = DefaultProcessForkOptions(getFileResolver())
         forkOptions.copyTo(extendedForkOptions)
 
@@ -72,18 +61,32 @@ open class KotlinNodeJsTestTask : AbstractTestProcessForkTask() {
         extendedForkOptions.environment.addPath("NODE_PATH", nodeModulesDir!!.canonicalPath)
 
         val cliArgs = KotlinNodeJsTestRunnerCliArgs(
-            nodeModulesToLoad.toList(),
-            filterExt.includePatterns + filterExt.commandLineIncludePatterns,
-            excludes,
-            ignoredTestSuites.cli
+                nodeModulesToLoad.toList(),
+                filterExt.includePatterns + filterExt.commandLineIncludePatterns,
+                excludes,
+                ignoredTestSuites.cli
         )
 
         return TCServiceMessagesTestExecutionSpec(
-            name,
-            extendedForkOptions,
-            listOf(finalTestRuntimeNodeModule.absolutePath) + cliArgs.toList()
+                name,
+                extendedForkOptions,
+                listOf(finalTestRuntimeNodeModule.absolutePath) + cliArgs.toList(),
+                replaceRootSuiteName = targetName
         )
     }
+
+    @get:Inject
+    open val execHandleFactory: ExecHandleFactory
+        get() = error("should be injected by gradle")
+
+    private val finalTestRuntimeNodeModule: File
+        get() = testRuntimeNodeModule
+                ?: nodeModulesDir!!.resolve(".bin").resolve(kotlinNodeJsTestRuntimeBin)
+
+    override fun createTestExecuter() = TCServiceMessagesTestExecutor(
+            execHandleFactory,
+            buildOperationExecutor
+    )
 
     fun getNodeJsFromMooworkPlugin(project: Project): String? {
         project.pluginManager.apply(NodePlugin::class.java)
