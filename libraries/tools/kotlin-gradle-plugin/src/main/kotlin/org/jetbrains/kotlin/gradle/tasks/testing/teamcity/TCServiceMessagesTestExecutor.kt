@@ -17,7 +17,6 @@ data class TCServiceMessagesTestExecutionSpec(
     val rootNodeName: String,
     val forkOptions: ProcessForkOptions,
     val args: List<String>,
-    val emulateTestFailureExceptions: Boolean = false,
     val skipRoots: Boolean = true
 ) : TestExecutionSpec
 

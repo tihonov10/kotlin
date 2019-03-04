@@ -7,6 +7,7 @@ import org.gradle.api.tasks.testing.TestOutputEvent.Destination.StdOut
 import org.gradle.api.tasks.testing.TestResult
 import org.gradle.api.tasks.testing.TestResult.ResultType.*
 import org.gradle.internal.operations.OperationIdentifier
+import org.jetbrains.kotlin.gradle.targets.js.NodeJsTestFailure
 
 class TCServiceMessagesClient(
     private val results: TestResultProcessor,
@@ -132,18 +133,7 @@ class TCServiceMessagesClient(
         message: TestFailed
     ) {
         hasFailures = true
-
-        if (settings.emulateTestFailureExceptions) {
-            results.failure(descriptor.id, object : Throwable(message.messageName) {
-                override fun fillInStackTrace(): Throwable = this
-                override fun toString(): String = message.stacktrace
-            })
-        } else {
-            val stacktrace = message.stacktrace
-            val errOutput = if (stacktrace.isNullOrBlank()) message.messageName else stacktrace
-
-            results.output(leaf?.descriptor, DefaultTestOutputEvent(StdErr, errOutput))
-        }
+        results.failure(descriptor.id, NodeJsTestFailure(message.messageName, message.stacktrace))
     }
 
     private fun requireGroup() = leaf ?: error("test out of group")
