@@ -226,6 +226,6 @@ abstract class AbstractFirTypeEnhancementTest : KtUsefulTestCase() {
     }
 
     companion object {
-        private val FOREIGN_ANNOTATIONS_SOURCES_PATH = "third-party/annotations"
+        private const val FOREIGN_ANNOTATIONS_SOURCES_PATH = "third-party/annotations"
     }
 }
