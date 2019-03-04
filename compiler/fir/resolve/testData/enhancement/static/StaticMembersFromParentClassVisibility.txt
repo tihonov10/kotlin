@@ -1,2 +1,20 @@
-public/*package*/ open class StaticMembersFromParentClassVisibility : R|error: Symbol not found, for `test/Parent`| {
+public open class Parent : R|java/lang/Object| {
+    private open static property private_(var): R|kotlin/Int|
+        private get(): R|kotlin/Int|
+        private set(value: R|kotlin/Int|): kotlin/Unit
+
+    public/*package*/ open static property packagePrivate_(var): R|kotlin/Int|
+        public/*package*/ get(): R|kotlin/Int|
+        public/*package*/ set(value: R|kotlin/Int|): kotlin/Unit
+
+    protected/*protected static*/ open static property protected_(var): R|kotlin/Int|
+        protected/*protected static*/ get(): R|kotlin/Int|
+        protected/*protected static*/ set(value: R|kotlin/Int|): kotlin/Unit
+
+    public open static property public_(var): R|kotlin/Int|
+        public get(): R|kotlin/Int|
+        public set(value: R|kotlin/Int|): kotlin/Unit
+
+}
+public open class StaticMembersFromParentClassVisibility : R|test/Parent| {
 }

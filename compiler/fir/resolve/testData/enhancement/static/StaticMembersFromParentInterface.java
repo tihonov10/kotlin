@@ -1,3 +1,5 @@
+// FILE: Parent1.java
+
 package test;
 
 interface Parent1 {
@@ -5,10 +7,18 @@ interface Parent1 {
     public static int b = 2;
 }
 
+// FILE: Parent2.java
+
+package test;
+
 interface Parent2 {
     public static int d = 1;
     public static int e = 2;
 }
+
+// FILE: StaticMembersFromParentInterface.java
+
+package test;
 
 class StaticMembersFromParentInterface implements Parent1, Parent2 {
     public static String b = "3";

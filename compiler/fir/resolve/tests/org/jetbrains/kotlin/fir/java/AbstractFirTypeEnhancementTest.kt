@@ -131,18 +131,18 @@ abstract class AbstractFirTypeEnhancementTest : KtUsefulTestCase() {
             ) {
                 override fun getPath(): String {
                     //TODO: patch LightVirtualFile
-                    return "/$name"
+                    return "/${it.name}"
                 }
             }
         }
         val factory = PsiFileFactory.getInstance(project) as PsiFileFactoryImpl
-        val psiFile = virtualFiles.map { factory.trySetupPsiForFile(it, JavaLanguage.INSTANCE, true, false)!! }.first()
+        val psiFiles = virtualFiles.map { factory.trySetupPsiForFile(it, JavaLanguage.INSTANCE, true, false)!! }
 
         val scope = GlobalSearchScope.filesScope(project, virtualFiles)
             .uniteWith(TopDownAnalyzerFacadeForJVM.AllJavaSourcesInProjectScope(project))
         val session = createSession(project, scope)
 
-        val topPsiClasses = psiFile.getChildrenOfType<PsiClass>().filter { it.name == javaFile.nameWithoutExtension }
+        val topPsiClasses = psiFiles.flatMap { it.getChildrenOfType<PsiClass>().toList() }
 
         val javaFirDump = StringBuilder().also { builder ->
             val renderer = FirRenderer(builder)

@@ -1,3 +1,5 @@
+// FILE: Parent.java
+
 package test;
 
 class Parent {
@@ -6,6 +8,10 @@ class Parent {
     public static void foo() {}
     public static void baz() {}
 }
+
+// FILE: StaticMembersFromParentClass.java
+
+package test;
 
 class StaticMembersFromParentClass extends Parent {
     public static String b = "3";

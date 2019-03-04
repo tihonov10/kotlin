@@ -1,4 +1,7 @@
 // FOREIGN_ANNOTATIONS
+
+// FILE: MyNullable.java
+
 import javax.annotation.*;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
@@ -11,9 +14,14 @@ import javax.annotation.meta.When;
 @TypeQualifierNickname
 @Nonnull(when = When.NEVER)
 @Retention(RetentionPolicy.RUNTIME)
-@interface MyNullable {
+public @interface MyNullable {
 
 }
+
+// FILE: NonNullNever.java
+
+import javax.annotation.*;
+import javax.annotation.meta.When;
 
 public class NonNullNever {
     @Nonnull(when = When.NEVER) public String field = null;
