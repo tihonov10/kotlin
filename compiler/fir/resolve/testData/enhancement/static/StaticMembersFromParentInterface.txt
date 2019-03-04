@@ -1,0 +1,6 @@
+public/*package*/ abstract interface Parent1 : R|java/lang/Object| {
+}
+public/*package*/ abstract interface Parent2 : R|java/lang/Object| {
+}
+public/*package*/ open class StaticMembersFromParentInterface : R|java/lang/Object|, R|test/Parent1|, R|test/Parent2| {
+}

@@ -1,0 +1,6 @@
+public/*package*/ abstract interface Parent1 : R|java/lang/Object| {
+}
+public/*package*/ abstract interface Parent2 : R|java/lang/Object| {
+}
+public/*package*/ final enum class StaticMembersInEnumFromParents : R|java/lang/Enum<test/StaticMembersInEnumFromParents>|, R|test/Parent1|, R|test/Parent2| {
+}

@@ -1,0 +1,4 @@
+public/*package*/ open class Parent : R|java/lang/Object| {
+}
+public/*package*/ open class StaticMembersFromParentClass : R|test/Parent| {
+}
