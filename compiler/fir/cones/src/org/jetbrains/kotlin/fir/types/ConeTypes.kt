@@ -121,7 +121,7 @@ abstract class ConeFunctionType : ConeClassLikeType() {
     abstract val returnType: ConeKotlinType
 }
 
-class ConeFlexibleType(val lowerBound: ConeSymbolBasedType, val upperBound: ConeSymbolBasedType) : ConeKotlinType(), FlexibleTypeMarker {
+class ConeFlexibleType(val lowerBound: ConeLookupTagBasedType, val upperBound: ConeLookupTagBasedType) : ConeKotlinType(), FlexibleTypeMarker {
     override val typeArguments: Array<out ConeKotlinTypeProjection>
         get() = emptyArray()
 

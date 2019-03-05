@@ -36,18 +36,16 @@ class FirClassUseSiteScope(
     //base symbol as key
     val overrides = mutableMapOf<ConeCallableSymbol, ConeCallableSymbol?>()
 
-    @Suppress("UNUSED_PARAMETER")
-    private fun isSubtypeOf(subType: ConeKotlinType, superType: ConeKotlinType): Boolean {
-        // TODO: introduce normal sub-typing
-        return true
+
+    val context = object : ConeTypeContext {
+        override val session: FirSession
+            get() = session
     }
 
-    val context = object : ConeTypeContext {}
+    private fun isEqualTypes(a: ConeKotlinType, b: ConeKotlinType) = AbstractStrictEqualityTypeChecker.strictEqualTypes(context, a, b)
 
-    fun isEqualTypes(a: ConeKotlinType, b: ConeKotlinType) = AbstractStrictEqualityTypeChecker.strictEqualTypes(context, a, b)
-    fun isEqualTypes(a: FirTypeRef, b: FirTypeRef) = isEqualTypes(a.cast<FirResolvedTypeRef>().type, b.cast<FirResolvedTypeRef>().type)
-
-    private fun isEqualTypes(a: FirTypeRef, b: FirTypeRef) = isEqualTypes(a.cast<FirResolvedTypeRef>().type, b.cast<FirResolvedTypeRef>().type)
+    private fun isEqualTypes(a: FirTypeRef, b: FirTypeRef) =
+        isEqualTypes(a.cast<FirResolvedTypeRef>().type, b.cast<FirResolvedTypeRef>().type)
 
     private fun isOverriddenFunCheck(member: FirNamedFunction, self: FirNamedFunction): Boolean {
         return member.valueParameters.size == self.valueParameters.size &&
