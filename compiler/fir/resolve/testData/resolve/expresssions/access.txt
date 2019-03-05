@@ -33,7 +33,7 @@ FILE: access.kt
         }
 
         public final function check R|Foo|.(): R|kotlin/String| {
-            return@@@check R|/Bar.plus|(abc#(), bar#())
+            return@@@check R|/Bar.plus|(R|/Foo.abc|(), R|/Bar.bar|())
         }
 
     }
