@@ -1,4 +1,4 @@
-package org.jetbrains.kotlin.gradle.tasks.testing.teamcity
+package org.jetbrains.kotlin.gradle.internal.testing
 
 import jetbrains.buildServer.messages.serviceMessages.ServiceMessage
 import org.gradle.api.internal.tasks.testing.TestExecuter
@@ -17,10 +17,15 @@ data class TCServiceMessagesTestExecutionSpec(
         val rootNodeName: String,
         val forkOptions: ProcessForkOptions,
         val args: List<String>,
-        val skipRoots: Boolean = true,
-        val replaceRootSuiteName: String? = null,
-        val appendLeaf: String? = null
-) : TestExecutionSpec
+        val nameOfRootSuiteToAppend: String? = null,
+        val nameOfRootSuiteToReplace: String? = null,
+        val nameOfLeafSuiteToAppend: String? = null,
+        val skipRoots: Boolean = false
+) : TestExecutionSpec {
+    init {
+        if (skipRoots) check(nameOfRootSuiteToReplace == null) { "nameOfRootSuiteToReplace makes no sense when skipRoots is set" }
+    }
+}
 
 private val log = LoggerFactory.getLogger("org.jetbrains.kotlin.gradle.tasks.testing")
 
@@ -33,15 +38,15 @@ class TCServiceMessagesTestExecutor(
     var shouldStop = false
 
     override fun execute(spec: TCServiceMessagesTestExecutionSpec, testResultProcessor: TestResultProcessor) {
-        val pipeIn = PipedInputStream()
+        val stdInPipe = PipedInputStream()
 
         val rootOperation = buildOperationExecutor.currentOperation.parentId
 
         outputReaderThread = thread(name = "${spec.forkOptions} output reader") {
-            val client = TCServiceMessagesClient(testResultProcessor, spec)
+            val client = TCServiceMessagesClient(testResultProcessor, spec, log)
 
             client.root(rootOperation) {
-                pipeIn.reader().useLines { lines ->
+                stdInPipe.reader().useLines { lines ->
                     lines.forEach {
                         if (shouldStop) {
                             client.closeAll()
@@ -49,7 +54,7 @@ class TCServiceMessagesTestExecutor(
                         }
 
                         try {
-                            ServiceMessage.parse(it)?.let(client::receive)
+                            ServiceMessage.parse(it, client)
                         } catch (e: Exception) {
                             log.error(
                                 "Error while processing test process output message \"$it\"",
@@ -64,7 +69,7 @@ class TCServiceMessagesTestExecutor(
         val exec = execHandleFactory.newExec()
         spec.forkOptions.copyTo(exec)
         exec.args = spec.args
-        exec.standardOutput = PipedOutputStream(pipeIn)
+        exec.standardOutput = PipedOutputStream(stdInPipe)
 
         execHandle = exec.build()
 

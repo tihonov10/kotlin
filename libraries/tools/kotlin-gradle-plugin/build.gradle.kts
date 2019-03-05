@@ -63,6 +63,8 @@ dependencies {
     runtime(projectRuntimeJar(":kotlin-compiler-runner"))
     runtime(projectRuntimeJar(":kotlin-scripting-compiler-embeddable"))
     runtime(project(":kotlin-reflect"))
+    runtime("org.jetbrains.intellij.deps:trove4j:1.0.20181211")
+    runtime(files("/Users/jetbrains/kotlin/compiler/daemon/daemon-client/build/libs/kotlin-daemon-client-1.3-SNAPSHOT.jar"))
 
     jarContents(compileOnly(intellijDep()) { includeJars("serviceMessages") })
     jarContents(projectArchives(":kotlin-test-nodejs-runner"))

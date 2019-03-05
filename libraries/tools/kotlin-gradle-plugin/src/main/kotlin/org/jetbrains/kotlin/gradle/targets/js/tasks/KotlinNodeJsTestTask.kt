@@ -14,8 +14,8 @@ import org.gradle.api.tasks.*
 import org.gradle.process.internal.DefaultProcessForkOptions
 import org.gradle.process.internal.ExecHandleFactory
 import org.jetbrains.kotlin.gradle.AbstractTestProcessForkTask
-import org.jetbrains.kotlin.gradle.tasks.testing.teamcity.TCServiceMessagesTestExecutionSpec
-import org.jetbrains.kotlin.gradle.tasks.testing.teamcity.TCServiceMessagesTestExecutor
+import org.jetbrains.kotlin.gradle.internal.testing.TCServiceMessagesTestExecutionSpec
+import org.jetbrains.kotlin.gradle.internal.testing.TCServiceMessagesTestExecutor
 import java.io.File
 import javax.inject.Inject
 
@@ -71,7 +71,7 @@ open class KotlinNodeJsTestTask : AbstractTestProcessForkTask() {
                 name,
                 extendedForkOptions,
                 listOf(finalTestRuntimeNodeModule.absolutePath) + cliArgs.toList(),
-                replaceRootSuiteName = targetName
+                nameOfRootSuiteToReplace = targetName
         )
     }
 
