@@ -18,6 +18,7 @@ package org.jetbrains.kotlin.js.test.semantics
 
 import org.jetbrains.kotlin.js.test.BasicBoxTest
 import org.jetbrains.kotlin.js.test.NashornJsTestChecker
+import org.jetbrains.kotlin.js.test.V8JsTestChecker
 import java.io.File
 import javax.script.ScriptException
 
@@ -44,6 +45,7 @@ class MultiModuleOrderTest : BasicBoxTest(pathToTestGroupDir, testGroupDir) {
         val mainJsFile = File(parentDir, "$name-main_v5.js").path
         val libJsFile = File(parentDir, "$name-lib_v5.js").path
         try {
+            // TODO: here we could not use V8JsTestChecker since it doesn't provide ScriptException
             NashornJsTestChecker.run(listOf(mainJsFile, libJsFile))
         }
         catch (e: ScriptException) {

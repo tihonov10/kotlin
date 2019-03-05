@@ -52,6 +52,8 @@ abstract class BasicIrBoxTest(
         super.doTest(filePath, expectedResult, mainCallParameters, coroutinesPackage)
     }
 
+    override val testChecker = /*if (runTestInNashorn) NashornIrJsTestChecker() else */ V8IrJsTestChecker
+
     private val runtimes = mapOf(JsIrTestRuntime.DEFAULT to defaultRuntimeKlib,
                                  JsIrTestRuntime.FULL to fullRuntimeKlib)
 
@@ -69,6 +71,7 @@ abstract class BasicIrBoxTest(
         runtime: JsIrTestRuntime,
         isMainModule: Boolean
     ) {
+
         val filesToCompile = units
             .map { (it as TranslationUnit.SourceFile).file }
             // TODO: split input files to some parts (global common, local common, test)
@@ -131,7 +134,7 @@ abstract class BasicIrBoxTest(
         // TODO: should we do anything special for module systems?
         // TODO: return list of js from translateFiles and provide then to this function with other js files
 
-        V8IrJsTestChecker.check(jsFiles, testModuleName, null, testFunction, expectedResult, withModuleSystem)
+        testChecker.check(jsFiles, testModuleName, null, testFunction, expectedResult, withModuleSystem)
     }
 }
 

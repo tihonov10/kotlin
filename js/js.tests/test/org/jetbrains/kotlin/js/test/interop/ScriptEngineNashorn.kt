@@ -6,9 +6,24 @@
 package org.jetbrains.kotlin.js.test.interop
 
 import jdk.nashorn.api.scripting.NashornScriptEngineFactory
+import jdk.nashorn.internal.runtime.ScriptRuntime
 import javax.script.Invocable
 
 class ScriptEngineNashorn : ScriptEngine {
+
+
+    class NashornRuntimeContext(private val map: Map<String, Any?>) : RuntimeContext {
+        override val keys = map.keys
+        override val values = map.values
+
+        override operator fun get(k: String) = map[k]
+        override operator fun set(k: String, v: Any?) {
+            (map as? MutableMap<String, Any?>)?.let { it[k] = v }
+        }
+
+        override fun toMap() = map.toMap()
+    }
+
     // TODO use "-strict"
     private val myEngine = NashornScriptEngineFactory().getScriptEngine("--language=es5", "--no-java", "--no-syntax-extensions")
 
@@ -21,8 +36,8 @@ class ScriptEngineNashorn : ScriptEngine {
         myEngine.eval(script)
     }
 
-    override fun getGlobalContext(): GlobalRuntimeContext {
-        return eval("this")
+    override fun getGlobalContext(): NashornRuntimeContext {
+        return NashornRuntimeContext(eval("this"))
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -36,4 +51,10 @@ class ScriptEngineNashorn : ScriptEngine {
 
     override fun release() {}
     override fun <T> releaseObject(t: T) {}
+    override fun restoreState(originalContext: RuntimeContext) {
+        val globalContext = getGlobalContext()
+        for (key in globalContext.keys) {
+            globalContext[key] = originalContext[key] ?: ScriptRuntime.UNDEFINED
+        }
+    }
 }
