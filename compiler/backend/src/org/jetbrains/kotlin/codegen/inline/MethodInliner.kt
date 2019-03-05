@@ -7,14 +7,16 @@ package org.jetbrains.kotlin.codegen.inline
 
 import org.jetbrains.kotlin.codegen.*
 import org.jetbrains.kotlin.codegen.coroutines.continuationAsmType
-import org.jetbrains.kotlin.codegen.coroutines.findSourceInstructions
 import org.jetbrains.kotlin.codegen.coroutines.getOrCreateJvmSuspendFunctionView
 import org.jetbrains.kotlin.codegen.inline.FieldRemapper.Companion.foldName
 import org.jetbrains.kotlin.codegen.inline.coroutines.CoroutineTransformer
 import org.jetbrains.kotlin.codegen.intrinsics.IntrinsicMethods
 import org.jetbrains.kotlin.codegen.optimization.ApiVersionCallsPreprocessingMethodTransformer
 import org.jetbrains.kotlin.codegen.optimization.FixStackWithLabelNormalizationMethodTransformer
-import org.jetbrains.kotlin.codegen.optimization.common.*
+import org.jetbrains.kotlin.codegen.optimization.common.ControlFlowGraph
+import org.jetbrains.kotlin.codegen.optimization.common.InsnSequence
+import org.jetbrains.kotlin.codegen.optimization.common.asSequence
+import org.jetbrains.kotlin.codegen.optimization.common.isMeaningful
 import org.jetbrains.kotlin.codegen.optimization.fixStack.peek
 import org.jetbrains.kotlin.codegen.optimization.fixStack.top
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -26,7 +28,6 @@ import org.jetbrains.kotlin.resolve.jvm.AsmTypes.OBJECT_TYPE
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.SmartList
 import org.jetbrains.kotlin.utils.SmartSet
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import org.jetbrains.org.objectweb.asm.Label
 import org.jetbrains.org.objectweb.asm.MethodVisitor
@@ -491,7 +492,6 @@ class MethodInliner(
         preprocessNodeBeforeInline(processingNode, labelOwner)
 
         replaceContinuationAccessesWithFakeContinuationsIfNeeded(processingNode)
-        removeRedundantAloadAstoreSequences(processingNode)
 
         val sources = analyzeMethodNodeBeforeInline(processingNode)
 
@@ -752,27 +752,6 @@ class MethodInliner(
         for (toReplace in continuations) {
             insertNodeBefore(createFakeContinuationMethodNodeForInline(), node, toReplace)
             node.instructions.remove(toReplace)
-        }
-    }
-
-    private fun removeRedundantAloadAstoreSequences(node: MethodNode) {
-        val astores = node.instructions.asSequence()
-            .filter { insn -> insn.opcode == Opcodes.ASTORE && node.localVariables.none { it.index == (insn as VarInsnNode).`var` } }
-            .toList()
-        if (astores.size <= 1) return
-        val astoreSources = findSourceInstructions("fake", node, astores, ignoreCopy = false)
-        val safeAstoreSources = astoreSources.filter { (astore, sources) ->
-            sources.singleOrNull { it.opcode == Opcodes.ALOAD }?.cast<VarInsnNode>()?.`var` == (astore as VarInsnNode).`var` &&
-                    // Check that it is captured lambda
-                    astoreSources.filter { (anotherAstore, _) ->
-                        anotherAstore != astore && (anotherAstore as VarInsnNode).`var` == astore.`var`
-                    }.all { (_, initialSources) ->
-                        initialSources.all { it.opcode == Opcodes.GETFIELD && (it as FieldInsnNode).desc.contains("/Function") }
-                    }
-        }
-        for ((astore, aload) in safeAstoreSources) {
-            node.instructions.removeAll(aload)
-            node.instructions.remove(astore)
         }
     }
 

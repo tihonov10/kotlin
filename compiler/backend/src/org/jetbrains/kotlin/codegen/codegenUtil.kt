@@ -429,6 +429,7 @@ fun MethodNode.textifyMethodNode(): String {
     val tmv = TraceMethodVisitor(text)
     this.instructions.asSequence().forEach { it.accept(tmv) }
     localVariables.forEach { text.visitLocalVariable(it.name, it.desc, it.signature, it.start.label, it.end.label, it.index) }
+    tryCatchBlocks.forEach { text.visitTryCatchBlock(it.start.label, it.end.label, it.handler.label, it.type) }
     val sw = StringWriter()
     text.print(PrintWriter(sw))
     return "$sw"
