@@ -19,11 +19,14 @@ data class TCServiceMessagesTestExecutionSpec(
         val args: List<String>,
         val nameOfRootSuiteToAppend: String? = null,
         val nameOfRootSuiteToReplace: String? = null,
-        val nameOfLeafSuiteToAppend: String? = null,
+        val nameOfLeafTestToAppend: String? = null,
         val skipRoots: Boolean = false
 ) : TestExecutionSpec {
     init {
-        if (skipRoots) check(nameOfRootSuiteToReplace == null) { "nameOfRootSuiteToReplace makes no sense when skipRoots is set" }
+        if (skipRoots) {
+            check(nameOfRootSuiteToReplace == null) { "nameOfRootSuiteToReplace makes no sense when skipRoots is set" }
+            check(nameOfRootSuiteToAppend == null) { "nameOfRootSuiteToAppend cannot work with skipRoots" }
+        }
     }
 }
 

@@ -9,7 +9,7 @@ package org.jetbrains.kotlin.gradle.targets.js
  *     org.jetbrains.kotlin.gradle.targets.js.NodeJsTestFailure
  * ```
  */
-class NodeJsTestFailure(message: String, val stackTrace: String) : Throwable(message) {
+class NodeJsTestFailure(message: String, val stackTrace: String?) : Throwable(message) {
     override fun fillInStackTrace(): Throwable = this
-    override fun toString(): String = stackTrace
+    override fun toString(): String = stackTrace ?: ""
 }
