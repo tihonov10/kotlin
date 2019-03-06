@@ -27,7 +27,7 @@ class RegeneratedLambdaFieldRemapper(
     originalLambdaInternalName: String,
     override val newLambdaInternalName: String,
     parameters: Parameters,
-    val recapturedLambdas: Map<String, LambdaInfo>,
+    val recapturedLambdas: Map<String, InlineableLambdaInfo>,
     remapper: FieldRemapper,
     private val isConstructor: Boolean
 ) : FieldRemapper(originalLambdaInternalName, remapper, parameters) {
@@ -75,7 +75,7 @@ class RegeneratedLambdaFieldRemapper(
 
 
         val result = StackValue.field(
-            if (field.isSkipped)
+            if (field.isSkipped && field.lambda is InlineableLambdaInfo)
                 Type.getObjectType(parent!!.parent!!.newLambdaInternalName)
             else
                 field.getType(),

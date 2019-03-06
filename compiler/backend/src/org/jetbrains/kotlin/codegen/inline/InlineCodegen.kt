@@ -91,7 +91,7 @@ abstract class InlineCodegen<out T : BaseExpressionCodegen>(
 
     protected val expressionMap = linkedMapOf<Int, LambdaInfo>()
 
-    var activeLambda: LambdaInfo? = null
+    var activeLambda: InlineableLambdaInfo? = null
         protected set
 
     private val defaultSourceMapper = sourceCompiler.lazySourceMapper
@@ -101,6 +101,8 @@ abstract class InlineCodegen<out T : BaseExpressionCodegen>(
     protected val maskValues = ArrayList<Int>()
     protected var maskStartIndex = -1
     protected var methodHandleInDefaultMethodIndex = -1
+
+    protected val noinlineableLambdas = hashMapOf<Type, Pair<KtExpression, ValueParameterDescriptor>>()
 
     init {
         sourceCompiler.initializeInlineFunctionContext(functionDescriptor)
@@ -316,7 +318,9 @@ abstract class InlineCodegen<out T : BaseExpressionCodegen>(
 
     private fun generateClosuresBodies() {
         for (info in expressionMap.values) {
-            info.generateLambdaBody(sourceCompiler, reifiedTypeInliner)
+            if (info is InlineableLambdaInfo) {
+                info.generateLambdaBody(sourceCompiler, reifiedTypeInliner)
+            }
         }
     }
 
@@ -346,6 +350,10 @@ abstract class InlineCodegen<out T : BaseExpressionCodegen>(
                 info.setRemapValue(remappedValue)
             } else {
                 info = invocationParamBuilder.addNextValueParameter(jvmType, false, remappedValue, parameterIndex)
+                val pair = noinlineableLambdas[stackValue.type]
+                if (pair != null && pair.second.isCrossinline) { // TODO should we support noinline lambdas?
+                    info.lambda = NoinlineableLambda(pair.first, stackValue.type,true)
+                }
             }
 
             recordParameterValueInLocalVal(
@@ -401,12 +409,14 @@ abstract class InlineCodegen<out T : BaseExpressionCodegen>(
     private fun putClosureParametersOnStack() {
         for (next in expressionMap.values) {
             //closure parameters for bounded callable references are generated inplace
-            if (next is ExpressionLambda && next.isBoundCallableReference) continue
-            putClosureParametersOnStack(next, null)
+            if (next is InlineableExpressionLambda) {
+                if (next.isBoundCallableReference) continue
+                putClosureParametersOnStack(next, null)
+            }
         }
     }
 
-    abstract protected fun putClosureParametersOnStack(next: LambdaInfo, functionReferenceReceiver: StackValue?)
+    abstract protected fun putClosureParametersOnStack(next: InlineableLambdaInfo, functionReferenceReceiver: StackValue?)
 
     protected fun rememberCapturedForDefaultLambda(defaultLambda: DefaultLambda) {
         for ((paramIndex, captured) in defaultLambda.capturedVars.withIndex()) {
@@ -706,7 +716,7 @@ class PsiInlineCodegen(
         delayedHiddenWriting = recordParameterValueInLocalVal(justProcess, false, *hiddenParameters.toTypedArray())
     }
 
-    override fun putClosureParametersOnStack(next: LambdaInfo, functionReferenceReceiver: StackValue?) {
+    override fun putClosureParametersOnStack(next: InlineableLambdaInfo, functionReferenceReceiver: StackValue?) {
         activeLambda = next
         when (next) {
             is PsiExpressionLambda -> codegen.pushClosureOnStack(next.classDescriptor, true, this, functionReferenceReceiver)
@@ -761,11 +771,12 @@ class PsiInlineCodegen(
             }
         } else {
             val value = codegen.gen(argumentExpression)
+            noinlineableLambdas[value.type] = argumentExpression to valueParameterDescriptor
             putValueIfNeeded(parameterType, value, ValueKind.GENERAL, parameterIndex)
         }
     }
 
-    private fun rememberClosure(expression: KtExpression, type: Type, parameter: ValueParameterDescriptor): LambdaInfo {
+    private fun rememberClosure(expression: KtExpression, type: Type, parameter: ValueParameterDescriptor): InlineableLambdaInfo {
         val ktLambda = KtPsiUtil.deparenthesize(expression)
         assert(isInlinableParameterExpression(ktLambda)) { "Couldn't find inline expression in ${expression.text}" }
 

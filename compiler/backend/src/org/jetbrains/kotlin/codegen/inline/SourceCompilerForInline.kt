@@ -53,7 +53,7 @@ interface SourceCompilerForInline {
     fun generateLambdaBody(
         adapter: MethodVisitor,
         jvmMethodSignature: JvmMethodSignature,
-        lambdaInfo: ExpressionLambda
+        lambdaInfo: InlineableExpressionLambda
     ): SMAP
 
     fun doCreateMethodNodeFromSource(
@@ -130,7 +130,7 @@ class PsiSourceCompilerForInline(private val codegen: ExpressionCodegen, overrid
     override fun generateLambdaBody(
         adapter: MethodVisitor,
         jvmMethodSignature: JvmMethodSignature,
-        lambdaInfo: ExpressionLambda
+        lambdaInfo: InlineableExpressionLambda
     ): SMAP {
         lambdaInfo as? PsiExpressionLambda ?: error("TODO")
         val invokeMethodDescriptor = lambdaInfo.invokeMethodDescriptor

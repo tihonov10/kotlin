@@ -183,13 +183,6 @@ class MethodInliner(
                     )
 
                     val transformResult = transformer.doTransform(nodeRemapper)
-                    if (transformResult == null) {
-                        remapper.removeMapping(oldClassName)
-                        if (!transformationInfo!!.wasAlreadyRegenerated) {
-                            result.addNotChangedClass(oldClassName)
-                        }
-                        return
-                    }
                     result.merge(transformResult)
                     result.addChangedType(oldClassName, newClassName)
 
@@ -226,7 +219,7 @@ class MethodInliner(
                     val invokeCall = currentInvokes.remove()
                     val info = invokeCall.lambdaInfo
 
-                    if (info == null) {
+                    if (info !is InlineableLambdaInfo) {
                         //noninlinable lambda
                         super.visitMethodInsn(opcode, owner, name, desc, itf)
                         return
@@ -270,7 +263,7 @@ class MethodInliner(
                         listOf(*info.invokeMethod.argumentTypes), valueParameters, invokeParameters, valueParamShift, this, coroutineDesc
                     )
 
-                    if (invokeCall.lambdaInfo.invokeMethodDescriptor.valueParameters.isEmpty()) {
+                    if (info.invokeMethodDescriptor.valueParameters.isEmpty()) {
                         // There won't be no parameters processing and line call can be left without actual instructions.
                         // Note: if function is called on the line with other instructions like 1 + foo(), 'nop' will still be generated.
                         visitInsn(Opcodes.NOP)
@@ -396,7 +389,7 @@ class MethodInliner(
         return resultNode
     }
 
-    private fun isDefaultLambdaWithReification(lambdaInfo: LambdaInfo) =
+    private fun isDefaultLambdaWithReification(lambdaInfo: InlineableLambdaInfo) =
         lambdaInfo is DefaultLambda && lambdaInfo.needReification
 
     private fun prepareNode(node: MethodNode, finallyDeepShift: Int): MethodNode {
@@ -549,17 +542,13 @@ class MethodInliner(
                                 } else if (i < argTypes.size && isAnonymousClassThatMustBeRegenerated(argTypes[i])) {
                                     capturesAnonymousObjectThatMustBeRegenerated = true
                                 }
-                                if (sourceValue.insns.singleOrNull().isCrossinlineParam()) {
-                                    crosssinlineIndices.add(i)
-                                }
 
                                 offset += if (i == 0) 1 else argTypes[i - 1].size
                             }
 
                             recordTransformation(
                                 buildConstructorInvocation(
-                                    owner, cur.desc, lambdaMapping, awaitClassReification, capturesAnonymousObjectThatMustBeRegenerated,
-                                    crosssinlineIndices
+                                    owner, cur.desc, lambdaMapping, awaitClassReification, capturesAnonymousObjectThatMustBeRegenerated
                                 )
                             )
                             awaitClassReification = false
@@ -633,7 +622,7 @@ class MethodInliner(
                             val stackTransformations = mutableSetOf<AbstractInsnNode>()
                             val lambdaInfo =
                                 getLambdaIfExistsAndMarkInstructions(frame.peek(1)!!, false, instructions, sources, stackTransformations)
-                            if (lambdaInfo != null && stackTransformations.all { it is VarInsnNode }) {
+                            if (lambdaInfo is InlineableLambdaInfo && stackTransformations.all { it is VarInsnNode }) {
                                 assert(lambdaInfo.lambdaClassType.internalName == nodeRemapper.originalLambdaInternalName) {
                                     "Wrong bytecode template for contract template: ${lambdaInfo.lambdaClassType.internalName} != ${nodeRemapper.originalLambdaInternalName}"
                                 }
@@ -663,12 +652,6 @@ class MethodInliner(
         processingNode.tryCatchBlocks.removeIf { it.isMeaningless() }
 
         return processingNode
-    }
-
-    private fun AbstractInsnNode?.isCrossinlineParam(): Boolean {
-        if (this == null) return false
-        if (opcode == Opcodes.ALOAD) return inliningContext.state.globalInlineContext.isCrossinlineParameter((this as VarInsnNode).`var`)
-        return false
     }
 
     // Replace ALOAD 0
@@ -832,8 +815,7 @@ class MethodInliner(
         desc: String,
         lambdaMapping: Map<Int, LambdaInfo>,
         needReification: Boolean,
-        capturesAnonymousObjectThatMustBeRegenerated: Boolean,
-        crossinlineIndices: List<Int>
+        capturesAnonymousObjectThatMustBeRegenerated: Boolean
     ): AnonymousObjectTransformationInfo {
 
         val info = AnonymousObjectTransformationInfo(
@@ -843,8 +825,7 @@ class MethodInliner(
             desc,
             false,
             inliningContext.nameGenerator,
-            capturesAnonymousObjectThatMustBeRegenerated,
-            crossinlineIndices
+            capturesAnonymousObjectThatMustBeRegenerated
         )
 
         val memoizeAnonymousObject = inliningContext.findAnonymousObjectTransformationInfo(anonymousType)

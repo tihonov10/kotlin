@@ -6,7 +6,6 @@
 package org.jetbrains.kotlin.codegen.inline
 
 import org.jetbrains.kotlin.codegen.ClassBuilder
-import org.jetbrains.kotlin.codegen.FieldInfo
 import org.jetbrains.kotlin.codegen.state.GenerationState
 
 class RootInliningContext(
@@ -27,7 +26,7 @@ class RegeneratedClassContext(
     state: GenerationState,
     nameGenerator: NameGenerator,
     typeRemapper: TypeRemapper,
-    lambdaInfo: LambdaInfo?,
+    lambdaInfo: InlineableLambdaInfo?,
     override val callSiteInfo: InlineCallSiteInfo
 ) : InliningContext(
     parent, expressionMap, state, nameGenerator, typeRemapper, lambdaInfo, true
@@ -41,13 +40,11 @@ open class InliningContext(
     val state: GenerationState,
     val nameGenerator: NameGenerator,
     val typeRemapper: TypeRemapper,
-    val lambdaInfo: LambdaInfo?,
+    val lambdaInfo: InlineableLambdaInfo?,
     val classRegeneration: Boolean
 ) {
 
     val isInliningLambda = lambdaInfo != null
-
-    val capturedCrossinlineParams = arrayListOf<FieldInfo>()
 
     var generateAssertField = false
 
@@ -68,7 +65,7 @@ open class InliningContext(
         internalNameToAnonymousObjectTransformationInfo.putIfAbsent(internalName, info)
     }
 
-    fun subInlineLambda(lambdaInfo: LambdaInfo): InliningContext =
+    fun subInlineLambda(lambdaInfo: InlineableLambdaInfo): InliningContext =
         subInline(
             nameGenerator.subGenerator("lambda"),
             //mark lambda inlined
@@ -89,7 +86,7 @@ open class InliningContext(
     fun subInline(
         generator: NameGenerator,
         additionalTypeMappings: Map<String, String?> = emptyMap(),
-        lambdaInfo: LambdaInfo? = this.lambdaInfo
+        lambdaInfo: InlineableLambdaInfo? = this.lambdaInfo
     ): InliningContext {
         val isInliningLambda = lambdaInfo != null
         return InliningContext(

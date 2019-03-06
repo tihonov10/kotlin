@@ -14,16 +14,6 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.codegen.inline;
+package org.jetbrains.kotlin.codegen.inline
 
-import org.jetbrains.annotations.Nullable;
-
-class InvokeCall {
-    public final LambdaInfo lambdaInfo;
-    public final int finallyDepthShift;
-
-    InvokeCall(@Nullable LambdaInfo lambdaInfo, int finallyDepthShift) {
-        this.lambdaInfo = lambdaInfo;
-        this.finallyDepthShift = finallyDepthShift;
-    }
-}
+internal data class InvokeCall(val lambdaInfo: LambdaInfo?, val finallyDepthShift: Int)

@@ -16,40 +16,12 @@ class GlobalInlineContext(diagnostics: DiagnosticSink) {
 
     private val typesUsedInInlineFunctions = LinkedList<MutableSet<String>>()
 
-    private val crossinlineSuspendParameters = Stack<BitSet>()
-
-    fun enterTransformation() {
-        crossinlineSuspendParameters.push(BitSet())
-    }
-
-    fun exitTransformation() {
-        crossinlineSuspendParameters.pop()
-    }
-
-    fun enterIntoInlining(call: ResolvedCall<*>?): Boolean {
-        if (call != null) {
-            val bitSet = BitSet(call.resultingDescriptor.valueParameters.size + 2)
-            var index = 0
-            if (call.resultingDescriptor.dispatchReceiverParameter != null) {
-                bitSet[index++] = false
-            }
-            if (call.resultingDescriptor.extensionReceiverParameter != null) {
-                bitSet[index++] = false
-            }
-            for (param in call.resultingDescriptor.valueParameters) {
-                bitSet[index++] = param.isCrossinline
-            }
-            crossinlineSuspendParameters.push(bitSet)
-        } else {
-            crossinlineSuspendParameters.push(BitSet())
-        }
-        return inlineCycleReporter.enterIntoInlining(call).also {
+    fun enterIntoInlining(call: ResolvedCall<*>?): Boolean =
+        inlineCycleReporter.enterIntoInlining(call).also {
             if (it) typesUsedInInlineFunctions.push(hashSetOf())
         }
-    }
 
     fun exitFromInliningOf(call: ResolvedCall<*>?) {
-        crossinlineSuspendParameters.pop()
         inlineCycleReporter.exitFromInliningOf(call)
         val pop = typesUsedInInlineFunctions.pop()
         typesUsedInInlineFunctions.peek()?.addAll(pop)
@@ -58,6 +30,4 @@ class GlobalInlineContext(diagnostics: DiagnosticSink) {
     fun recordTypeFromInlineFunction(type: String) = typesUsedInInlineFunctions.peek().add(type)
 
     fun isTypeFromInlineFunction(type: String) = typesUsedInInlineFunctions.peek().contains(type)
-
-    fun isCrossinlineParameter(i: Int): Boolean = crossinlineSuspendParameters.isNotEmpty() && crossinlineSuspendParameters.peek()[i]
 }
