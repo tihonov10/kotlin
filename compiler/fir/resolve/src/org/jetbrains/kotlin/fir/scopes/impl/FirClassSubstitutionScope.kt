@@ -118,7 +118,7 @@ class FirClassSubstitutionScope(
             // TODO: consider using here some light-weight functions instead of pseudo-real FirMemberFunctionImpl
             // As second alternative, we can invent some light-weight kind of FirRegularClass
             FirMemberFunctionImpl(
-                session,
+                this@FirClassSubstitutionScope.session,
                 psi,
                 symbol,
                 name,
@@ -129,7 +129,7 @@ class FirClassSubstitutionScope(
                 valueParameters += member.valueParameters.zip(newParameterTypes) { valueParameter, newType ->
                     with(valueParameter) {
                         FirValueParameterImpl(
-                            session, psi,
+                            this@FirClassSubstitutionScope.session, psi,
                             name, this.returnTypeRef.withReplacedConeType(newType),
                             defaultValue, isCrossinline, isNoinline, isVararg
                         )
