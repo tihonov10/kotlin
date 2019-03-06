@@ -97,21 +97,25 @@ class FirRenderer(builder: StringBuilder) : FirVisitorVoid() {
         }
     }
 
-    override fun visitCallableMember(callableMember: FirCallableMember) {
-        visitMemberDeclaration(callableMember)
-        val receiverType = callableMember.receiverTypeRef
+    override fun visitCallableDeclaration(callableDeclaration: FirCallableDeclaration) {
+        if (callableDeclaration is FirMemberDeclaration) {
+            visitMemberDeclaration(callableDeclaration)
+        } else {
+            visitTypedDeclaration(callableDeclaration)
+        }
+        val receiverType = callableDeclaration.receiverTypeRef
         if (receiverType != null) {
             print(" ")
             receiverType.accept(this)
             print(".")
         }
-        if (callableMember is FirFunction) {
-            callableMember.valueParameters.renderParameters()
-        } else if (callableMember is FirProperty) {
-            print(if (callableMember.isVar) "(var)" else "(val)")
+        if (callableDeclaration is FirFunction) {
+            callableDeclaration.valueParameters.renderParameters()
+        } else if (callableDeclaration is FirProperty) {
+            print(if (callableDeclaration.isVar) "(var)" else "(val)")
         }
         print(": ")
-        callableMember.returnTypeRef.accept(this)
+        callableDeclaration.returnTypeRef.accept(this)
     }
 
     private fun Visibility.asString() =
@@ -122,7 +126,7 @@ class FirRenderer(builder: StringBuilder) : FirVisitorVoid() {
 
     private fun FirMemberDeclaration.modalityAsString(): String {
         return modality?.name?.toLowerCase() ?: run {
-            if (this is FirCallableMember && this.isOverride) {
+            if (this is FirCallableMemberDeclaration && this.isOverride) {
                 "open?"
             } else {
                 "final?"
@@ -144,7 +148,7 @@ class FirRenderer(builder: StringBuilder) : FirVisitorVoid() {
         if (memberDeclaration.isActual) {
             print("actual ")
         }
-        if (memberDeclaration is FirCallableMember && memberDeclaration.isOverride) {
+        if (memberDeclaration is FirCallableMemberDeclaration && memberDeclaration.isOverride) {
             print("override ")
         }
         if (memberDeclaration is FirRegularClass) {
@@ -256,7 +260,7 @@ class FirRenderer(builder: StringBuilder) : FirVisitorVoid() {
     }
 
     override fun visitProperty(property: FirProperty) {
-        visitCallableMember(property)
+        visitCallableDeclaration(property)
         property.initializer?.let {
             print(" = ")
             it.accept(this)
@@ -281,7 +285,7 @@ class FirRenderer(builder: StringBuilder) : FirVisitorVoid() {
     }
 
     override fun visitNamedFunction(namedFunction: FirNamedFunction) {
-        visitCallableMember(namedFunction)
+        visitCallableDeclaration(namedFunction)
         namedFunction.body?.accept(this)
         if (namedFunction.body == null) {
             println()

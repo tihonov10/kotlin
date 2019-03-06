@@ -693,7 +693,7 @@ class RawFirBuilder(val session: FirSession, val stubMode: Boolean) {
                     propertyType,
                     isVar,
                     initializer,
-                    property.delegate?.expression?.toFirExpression("Incorrect delegate expression")
+                    delegate = property.delegate?.expression?.toFirExpression("Incorrect delegate expression")
                 )
             } else {
                 FirMemberPropertyImpl(
