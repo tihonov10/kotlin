@@ -53,8 +53,6 @@ dependencies {
     compileOnly("org.codehaus.groovy:groovy-all:2.4.12")
     compileOnly(gradleApi())
 
-    compileOnly("com.moowork.node:com.moowork.node.gradle.plugin:1.2.0")
-
     compileOnly(intellijCoreDep()) { includeJars("intellij-core") }
 
     runtime(projectRuntimeJar(":kotlin-compiler-embeddable"))

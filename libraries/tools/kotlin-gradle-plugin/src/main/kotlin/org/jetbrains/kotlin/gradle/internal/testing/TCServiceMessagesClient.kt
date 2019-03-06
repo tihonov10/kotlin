@@ -13,9 +13,24 @@ import org.slf4j.Logger
 import java.text.ParseException
 import java.lang.System.currentTimeMillis as currentTimeMillis1
 
+data class TCServiceMessagesClientSettings(
+        val rootNodeName: String,
+        val nameOfRootSuiteToAppend: String? = null,
+        val nameOfRootSuiteToReplace: String? = null,
+        val nameOfLeafTestToAppend: String? = null,
+        val skipRoots: Boolean = false
+) {
+    init {
+        if (skipRoots) {
+            check(nameOfRootSuiteToReplace == null) { "nameOfRootSuiteToReplace makes no sense when skipRoots is set" }
+            check(nameOfRootSuiteToAppend == null) { "nameOfRootSuiteToAppend cannot work with skipRoots" }
+        }
+    }
+}
+
 internal class TCServiceMessagesClient(
         private val results: TestResultProcessor,
-        val settings: TCServiceMessagesTestExecutionSpec,
+        val settings: TCServiceMessagesClientSettings,
         val log: Logger
 ) : ServiceMessageParserCallback {
     inline fun root(operation: OperationIdentifier, actions: () -> Unit) {

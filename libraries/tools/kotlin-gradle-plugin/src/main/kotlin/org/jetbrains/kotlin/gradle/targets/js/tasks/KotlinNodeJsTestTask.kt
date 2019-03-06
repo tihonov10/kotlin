@@ -5,24 +5,29 @@
 
 package org.jetbrains.kotlin.gradle.targets.js.tasks
 
-import com.moowork.gradle.node.NodeExtension
-import com.moowork.gradle.node.NodePlugin
-import com.moowork.gradle.node.variant.VariantBuilder
-import org.gradle.api.Project
+import org.gradle.api.internal.file.FileResolver
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
 import org.gradle.api.tasks.*
+import org.gradle.api.tasks.testing.AbstractTestTask
+import org.gradle.process.ProcessForkOptions
 import org.gradle.process.internal.DefaultProcessForkOptions
 import org.gradle.process.internal.ExecHandleFactory
-import org.jetbrains.kotlin.gradle.AbstractTestProcessForkTask
+import org.jetbrains.kotlin.gradle.internal.testing.TCServiceMessagesClientSettings
 import org.jetbrains.kotlin.gradle.internal.testing.TCServiceMessagesTestExecutionSpec
 import org.jetbrains.kotlin.gradle.internal.testing.TCServiceMessagesTestExecutor
+import org.jetbrains.kotlin.gradle.testing.IgnoredTestSuites
+import org.jetbrains.kotlin.gradle.testing.TestsGrouping
 import java.io.File
 import javax.inject.Inject
 
-open class KotlinNodeJsTestTask : AbstractTestProcessForkTask() {
+open class KotlinNodeJsTestTask : AbstractTestTask() {
     @Input
     var ignoredTestSuites: IgnoredTestSuites =
             IgnoredTestSuites.showWithContents
+
+    @Input
+    var testsGrouping: TestsGrouping =
+            TestsGrouping.root
 
     @Input
     @Optional
@@ -50,13 +55,20 @@ open class KotlinNodeJsTestTask : AbstractTestProcessForkTask() {
         filterExt.isFailOnNoMatchingTests = false
     }
 
-    override fun createTestExecutionSpec(): TCServiceMessagesTestExecutionSpec {
-        val extendedForkOptions = DefaultProcessForkOptions(getFileResolver())
-        forkOptions.copyTo(extendedForkOptions)
+    @get:Inject
+    open val fileResolver: FileResolver
+        get() = error("should be injected by gradle")
 
-        if (extendedForkOptions.executable == null) {
-            extendedForkOptions.executable = getNodeJsFromMooworkPlugin(project)
-        }
+    @Internal
+    val nodeJsProcessOptions: ProcessForkOptions = DefaultProcessForkOptions(fileResolver)
+
+    fun nodeJs(options: ProcessForkOptions.() -> Unit) {
+        options(nodeJsProcessOptions)
+    }
+
+    override fun createTestExecutionSpec(): TCServiceMessagesTestExecutionSpec {
+        val extendedForkOptions = DefaultProcessForkOptions(fileResolver)
+        nodeJsProcessOptions.copyTo(extendedForkOptions)
 
         extendedForkOptions.environment.addPath("NODE_PATH", nodeModulesDir!!.canonicalPath)
 
@@ -67,11 +79,16 @@ open class KotlinNodeJsTestTask : AbstractTestProcessForkTask() {
                 ignoredTestSuites.cli
         )
 
+        val clientSettings = when (testsGrouping) {
+            TestsGrouping.none -> TCServiceMessagesClientSettings(rootNodeName = name, skipRoots = true)
+            TestsGrouping.root -> TCServiceMessagesClientSettings(rootNodeName = name, nameOfRootSuiteToReplace = targetName)
+            TestsGrouping.leaf -> TCServiceMessagesClientSettings(rootNodeName = name, skipRoots = true, nameOfLeafTestToAppend = targetName)
+        }
+
         return TCServiceMessagesTestExecutionSpec(
-                name,
                 extendedForkOptions,
                 listOf(finalTestRuntimeNodeModule.absolutePath) + cliArgs.toList(),
-                nameOfRootSuiteToReplace = targetName
+                clientSettings
         )
     }
 
@@ -87,19 +104,6 @@ open class KotlinNodeJsTestTask : AbstractTestProcessForkTask() {
             execHandleFactory,
             buildOperationExecutor
     )
-
-    fun getNodeJsFromMooworkPlugin(project: Project): String? {
-        project.pluginManager.apply(NodePlugin::class.java)
-        val nodeJsSettings = NodeExtension.get(project)
-        return VariantBuilder(nodeJsSettings).build().nodeExec
-    }
-}
-
-@Suppress("EnumEntryName")
-enum class IgnoredTestSuites(val cli: KotlinNodeJsTestRunnerCliArgs.IgnoredTestSuitesReporting) {
-    hide(KotlinNodeJsTestRunnerCliArgs.IgnoredTestSuitesReporting.skip),
-    showWithContents(KotlinNodeJsTestRunnerCliArgs.IgnoredTestSuitesReporting.reportAllInnerTestsAsIgnored),
-    showWithoutContents(KotlinNodeJsTestRunnerCliArgs.IgnoredTestSuitesReporting.reportAsIgnoredTest)
 }
 
 private fun MutableMap<String, Any>.addPath(key: String, path: String) {

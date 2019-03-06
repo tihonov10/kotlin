@@ -14,21 +14,10 @@ import java.io.PipedOutputStream
 import kotlin.concurrent.thread
 
 data class TCServiceMessagesTestExecutionSpec(
-        val rootNodeName: String,
         val forkOptions: ProcessForkOptions,
         val args: List<String>,
-        val nameOfRootSuiteToAppend: String? = null,
-        val nameOfRootSuiteToReplace: String? = null,
-        val nameOfLeafTestToAppend: String? = null,
-        val skipRoots: Boolean = false
-) : TestExecutionSpec {
-    init {
-        if (skipRoots) {
-            check(nameOfRootSuiteToReplace == null) { "nameOfRootSuiteToReplace makes no sense when skipRoots is set" }
-            check(nameOfRootSuiteToAppend == null) { "nameOfRootSuiteToAppend cannot work with skipRoots" }
-        }
-    }
-}
+        val clientSettings: TCServiceMessagesClientSettings
+) : TestExecutionSpec
 
 private val log = LoggerFactory.getLogger("org.jetbrains.kotlin.gradle.tasks.testing")
 
@@ -46,26 +35,30 @@ class TCServiceMessagesTestExecutor(
         val rootOperation = buildOperationExecutor.currentOperation.parentId
 
         outputReaderThread = thread(name = "${spec.forkOptions} output reader") {
-            val client = TCServiceMessagesClient(testResultProcessor, spec, log)
+            try {
+                val client = TCServiceMessagesClient(testResultProcessor, spec.clientSettings, log)
 
-            client.root(rootOperation) {
-                stdInPipe.reader().useLines { lines ->
-                    lines.forEach {
-                        if (shouldStop) {
-                            client.closeAll()
-                            return@thread
-                        }
+                client.root(rootOperation) {
+                    stdInPipe.reader().useLines { lines ->
+                        lines.forEach {
+                            if (shouldStop) {
+                                client.closeAll()
+                                return@thread
+                            }
 
-                        try {
-                            ServiceMessage.parse(it, client)
-                        } catch (e: Exception) {
-                            log.error(
-                                "Error while processing test process output message \"$it\"",
-                                e
-                            )
+                            try {
+                                ServiceMessage.parse(it, client)
+                            } catch (e: Exception) {
+                                log.error(
+                                        "Error while processing test process output message \"$it\"",
+                                        e
+                                )
+                            }
                         }
                     }
                 }
+            } catch (t: Throwable) {
+                log.error("Error creating TCServiceMessagesClient", t)
             }
         }
 

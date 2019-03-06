@@ -1,10 +1,9 @@
 package org.jetbrains.kotlin.gradle.internal.testing.tcsmc
 
 import org.gradle.internal.operations.OperationIdentifier
-import org.gradle.process.internal.DefaultProcessForkOptions
 import org.jetbrains.kotlin.gradle.internal.testing.RecordingTestResultProcessor
 import org.jetbrains.kotlin.gradle.internal.testing.TCServiceMessagesClient
-import org.jetbrains.kotlin.gradle.internal.testing.TCServiceMessagesTestExecutionSpec
+import org.jetbrains.kotlin.gradle.internal.testing.TCServiceMessagesClientSettings
 import org.slf4j.LoggerFactory
 import kotlin.test.assertEquals
 
@@ -31,20 +30,14 @@ open class TCServiceMessagesClientTest {
     internal open fun createClient(results: RecordingTestResultProcessor): TCServiceMessagesClient {
         return TCServiceMessagesClient(
                 results,
-                createExecutionSpec(),
+                TCServiceMessagesClientSettings(
+                        "root",
+                        nameOfRootSuiteToAppend,
+                        nameOfRootSuiteToReplace,
+                        nameOfLeafTestToAppend,
+                        skipRoots
+                ),
                 LoggerFactory.getLogger("test")
-        )
-    }
-
-    protected open fun createExecutionSpec(): TCServiceMessagesTestExecutionSpec {
-        return TCServiceMessagesTestExecutionSpec(
-                "root",
-                DefaultProcessForkOptions(null),
-                listOf(),
-                nameOfRootSuiteToAppend,
-                nameOfRootSuiteToReplace,
-                nameOfLeafTestToAppend,
-                skipRoots
         )
     }
 }
