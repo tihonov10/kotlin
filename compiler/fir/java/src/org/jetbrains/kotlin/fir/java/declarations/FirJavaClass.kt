@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.fir.java.scopes.JavaClassEnhancementScope
 import org.jetbrains.kotlin.fir.java.scopes.JavaClassUseSiteScope
 import org.jetbrains.kotlin.fir.resolve.lookupSuperTypes
 import org.jetbrains.kotlin.fir.resolve.toSymbol
+import org.jetbrains.kotlin.fir.scopes.FirScope
 import org.jetbrains.kotlin.fir.scopes.impl.FirClassDeclaredMemberScope
 import org.jetbrains.kotlin.fir.scopes.impl.FirCompositeScope
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
@@ -48,11 +49,13 @@ class FirJavaClass(
 
     override val superTypeRefs = mutableListOf<FirTypeRef>()
 
-    val useSiteScope: JavaClassUseSiteScope by lazy { buildUseSiteScope() }
+    override fun buildClassSpecificUseSiteScope(useSiteSession: FirSession): FirScope? {
+        return JavaClassEnhancementScope(useSiteSession, buildJavaUseSiteScope(useSiteSession))
+    }
 
     override val declarations = mutableListOf<FirDeclaration>()
 
-    private fun FirRegularClass.buildUseSiteScope(useSiteSession: FirSession = session): JavaClassUseSiteScope {
+    private fun FirRegularClass.buildJavaUseSiteScope(useSiteSession: FirSession): JavaClassUseSiteScope {
         val superTypeEnhancementScope = FirCompositeScope(mutableListOf())
         val declaredScope = FirClassDeclaredMemberScope(this, useSiteSession)
         lookupSuperTypes(this, lookupInterfaces = true, deep = false, useSiteSession = useSiteSession)
@@ -60,7 +63,8 @@ class FirJavaClass(
                 if (useSiteSuperType is ConeClassErrorType) return@mapNotNullTo null
                 val symbol = useSiteSuperType.lookupTag.toSymbol(useSiteSession)
                 if (symbol is FirClassSymbol) {
-                    JavaClassEnhancementScope(useSiteSession, symbol.fir.buildUseSiteScope(useSiteSession))
+                    // Do we really need JavaClassEnhancementScope here?
+                    JavaClassEnhancementScope(useSiteSession, symbol.fir.buildJavaUseSiteScope(useSiteSession))
                 } else {
                     null
                 }
