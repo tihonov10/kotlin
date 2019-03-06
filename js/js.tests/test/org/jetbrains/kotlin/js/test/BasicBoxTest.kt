@@ -44,7 +44,7 @@ import org.jetbrains.kotlin.js.parser.sourcemaps.SourceMapSuccess
 import org.jetbrains.kotlin.js.sourceMap.SourceFilePathResolver
 import org.jetbrains.kotlin.js.sourceMap.SourceMap3Builder
 import org.jetbrains.kotlin.js.test.interop.ScriptEngineNashorn
-import org.jetbrains.kotlin.js.test.interop.ScriptEngineV8
+import org.jetbrains.kotlin.js.test.interop.ScriptEngineV8Lazy
 import org.jetbrains.kotlin.js.test.utils.*
 import org.jetbrains.kotlin.js.util.TextOutputImpl
 import org.jetbrains.kotlin.metadata.DebugProtoBuf
@@ -88,14 +88,10 @@ abstract class BasicBoxTest(
     protected open val runMinifierByDefault: Boolean = false
     protected open val skipMinification = System.getProperty("kotlin.js.skipMinificationTest", "false")!!.toBoolean()
 
-    protected val runTestInNashorn = System.getProperty("kotlin.js.useNashorn", "false")!!.toBoolean()
-
     protected open val incrementalCompilationChecksEnabled = true
 
-    protected open val testChecker = if (runTestInNashorn) NashornJsTestChecker else V8JsTestChecker
-    private val engineForMinifier by lazy {
-        if (runTestInNashorn) ScriptEngineNashorn() else ScriptEngineV8()
-    }
+    protected open val testChecker get() = if (runTestInNashorn) NashornJsTestChecker else V8JsTestChecker
+
 
     fun doTest(filePath: String) {
         doTest(filePath, "OK", MainCallParameters.noCall())
@@ -820,11 +816,15 @@ abstract class BasicBoxTest(
         private val CALL_MAIN_PATTERN = Pattern.compile("^// *CALL_MAIN *$", Pattern.MULTILINE)
         private val KJS_WITH_FULL_RUNTIME = Pattern.compile("^// *KJS_WITH_FULL_RUNTIME *\$", Pattern.MULTILINE)
 
+        @JvmStatic
+        protected val runTestInNashorn = System.getProperty("kotlin.js.useNashorn", "false")!!.toBoolean()
+
         val TEST_MODULE = "JS_TESTS"
         private val DEFAULT_MODULE = "main"
         private val TEST_FUNCTION = "box"
         private val OLD_MODULE_SUFFIX = "-old"
 
         const val KOTLIN_TEST_INTERNAL = "\$kotlin_test_internal\$"
+        private val engineForMinifier = if (runTestInNashorn) ScriptEngineNashorn() else ScriptEngineV8Lazy()
     }
 }

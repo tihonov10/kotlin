@@ -12,13 +12,13 @@ import javax.script.Invocable
 class ScriptEngineNashorn : ScriptEngine {
 
 
-    class NashornRuntimeContext(private val map: Map<String, Any?>) : RuntimeContext {
+    class NashornRuntimeContext(private val map: MutableMap<String, Any?>) : RuntimeContext {
         override val keys = map.keys
         override val values = map.values
 
         override operator fun get(k: String) = map[k]
         override operator fun set(k: String, v: Any?) {
-            (map as? MutableMap<String, Any?>)?.let { it[k] = v }
+            map[k] = v
         }
 
         override fun toMap() = map.toMap()
@@ -52,6 +52,7 @@ class ScriptEngineNashorn : ScriptEngine {
     override fun release() {}
     override fun <T> releaseObject(t: T) {}
     override fun restoreState(originalContext: RuntimeContext) {
+        require(originalContext is NashornRuntimeContext)
         val globalContext = getGlobalContext()
         for (key in globalContext.keys) {
             globalContext[key] = originalContext[key] ?: ScriptRuntime.UNDEFINED

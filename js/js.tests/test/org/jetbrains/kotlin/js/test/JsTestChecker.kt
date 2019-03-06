@@ -92,7 +92,7 @@ abstract class AbstractNashornJsTestChecker : AbstractJsTestChecker() {
         get() = engineCache ?: createScriptEngineForTest().also {
             engineCache = it
             globalObject = it.getGlobalContext()
-            originalState = ScriptEngineNashorn.NashornRuntimeContext(globalObject.toMap())
+            originalState = ScriptEngineNashorn.NashornRuntimeContext(globalObject.toMap().toMutableMap())
         }
 
     protected open fun beforeRun() {}

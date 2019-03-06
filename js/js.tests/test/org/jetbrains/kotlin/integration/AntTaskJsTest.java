@@ -20,7 +20,6 @@ import com.intellij.openapi.util.io.FileUtil;
 import kotlin.collections.CollectionsKt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.kotlin.js.test.NashornJsTestChecker;
 import org.jetbrains.kotlin.js.test.V8JsTestChecker;
 import org.jetbrains.kotlin.test.KotlinTestUtils;
 
@@ -59,7 +58,6 @@ public class AntTaskJsTest extends AbstractAntTaskTest {
 
         List<String> filePaths = CollectionsKt.map(fileNames, s -> getOutputFileByName(s).getAbsolutePath());
 
-        //NashornJsTestChecker.INSTANCE.check(filePaths, "out", "foo", "box", "OK", withModuleSystem);
         V8JsTestChecker.INSTANCE.check(filePaths, "out", "foo", "box", "OK", withModuleSystem);
     }
 

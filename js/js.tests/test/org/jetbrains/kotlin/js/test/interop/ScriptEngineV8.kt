@@ -46,7 +46,8 @@ class ScriptEngineV8 : ScriptEngine {
     private fun getGlobalPropertyNames(): List<String> {
         val v8Array = eval<V8Array>("Object.getOwnPropertyNames(this)")
         val javaArray = V8ObjectUtils.toList(v8Array) as List<String>
-        return javaArray.also { v8Array.release() }
+        v8Array.release()
+        return javaArray
     }
 
     override fun getGlobalContext(): V8RuntimeContext {
@@ -86,4 +87,24 @@ class ScriptEngineV8 : ScriptEngine {
     override fun release() {
         myRuntime.release()
     }
+}
+
+class ScriptEngineV8Lazy: ScriptEngine {
+    override fun <T> eval(script: String) = engine.eval<T>(script)
+
+    override fun getGlobalContext() = engine.getGlobalContext()
+
+    override fun evalVoid(script: String) = engine.evalVoid(script)
+
+    override fun <T> callMethod(obj: Any, name: String, vararg args: Any?) = engine.callMethod<T>(obj, name, args)
+
+    override fun loadFile(path: String) = engine.loadFile(path)
+
+    override fun release() = engine.release()
+
+    override fun <T> releaseObject(t: T) = engine.releaseObject(t)
+
+    override fun restoreState(originalContext: RuntimeContext) = engine.restoreState(originalContext)
+
+    private val engine by lazy { ScriptEngineV8() }
 }

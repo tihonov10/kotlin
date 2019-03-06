@@ -18,7 +18,6 @@ package org.jetbrains.kotlin.js.test.semantics
 
 import org.jetbrains.kotlin.js.test.BasicBoxTest
 import org.jetbrains.kotlin.js.test.NashornJsTestChecker
-import org.jetbrains.kotlin.js.test.V8JsTestChecker
 import java.io.File
 import javax.script.ScriptException
 
