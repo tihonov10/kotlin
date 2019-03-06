@@ -95,7 +95,7 @@ class FirClassSubstitutionScope(
         return super.processFunctionsByName(name, processor)
     }
 
-    override fun processPropertiesByName(name: Name, processor: (ConePropertySymbol) -> ProcessorAction): ProcessorAction {
+    override fun processPropertiesByName(name: Name, processor: (ConeVariableSymbol) -> ProcessorAction): ProcessorAction {
         return unsubstituted.processPropertiesByName(name, processor)
     }
 
