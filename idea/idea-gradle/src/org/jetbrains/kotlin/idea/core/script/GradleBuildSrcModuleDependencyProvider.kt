@@ -6,16 +6,18 @@
 package org.jetbrains.kotlin.idea.core.script
 
 import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
-import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import org.jetbrains.kotlin.idea.caches.project.IdeaModuleInfo
+import org.jetbrains.kotlin.idea.caches.project.productionSourceInfo
+import org.jetbrains.kotlin.idea.caches.project.testSourceInfo
 import org.jetbrains.kotlin.idea.core.script.dependencies.ScriptRelatedModulesProvider
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings
 import org.jetbrains.plugins.gradle.util.GradleConstants
 
 class GradleBuildSrcModuleDependencyProvider : ScriptRelatedModulesProvider() {
-    override fun getRelatedModules(file: VirtualFile, project: Project): List<Module> {
+    override fun getRelatedModules(file: VirtualFile, project: Project): List<IdeaModuleInfo> {
         val gradleSettings = ExternalSystemApiUtil.getSettings(project, GradleConstants.SYSTEM_ID)
         val projectSettings = gradleSettings.getLinkedProjectsSettings().filterIsInstance<GradleProjectSettings>().firstOrNull()
             ?: return emptyList()
@@ -30,6 +32,6 @@ class GradleBuildSrcModuleDependencyProvider : ScriptRelatedModulesProvider() {
             ModuleManager.getInstance(project).modules.filter {
                 ExternalSystemApiUtil.getExternalProjectPath(it) == path
             }
-        }
+        }.mapNotNull { it.productionSourceInfo() ?: it.testSourceInfo()  }
     }
 }

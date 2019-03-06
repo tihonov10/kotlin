@@ -7,18 +7,18 @@ package org.jetbrains.kotlin.idea.core.script.dependencies
 
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.extensions.Extensions
-import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import org.jetbrains.kotlin.idea.caches.project.IdeaModuleInfo
 
 abstract class ScriptRelatedModulesProvider {
-    abstract fun getRelatedModules(file: VirtualFile, project: Project): List<Module>
+    abstract fun getRelatedModules(file: VirtualFile, project: Project): List<IdeaModuleInfo>
 
     companion object {
         private val EP_NAME: ExtensionPointName<ScriptRelatedModulesProvider> =
             ExtensionPointName.create<ScriptRelatedModulesProvider>("org.jetbrains.kotlin.scriptRelatedModulesProvider")
 
-        fun getRelatedModules(file: VirtualFile, project: Project): List<Module> {
+        fun getRelatedModules(file: VirtualFile, project: Project): List<IdeaModuleInfo> {
             return Extensions.getArea(project).getExtensionPoint(EP_NAME).extensions
                 .filterIsInstance<ScriptRelatedModulesProvider>()
                 .flatMap { it.getRelatedModules(file, project) }

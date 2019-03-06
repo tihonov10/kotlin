@@ -6,19 +6,21 @@
 package org.jetbrains.kotlin.idea.scratch
 
 import com.intellij.ide.scratch.ScratchFileService
-import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import org.jetbrains.kotlin.idea.caches.project.IdeaModuleInfo
+import org.jetbrains.kotlin.idea.caches.project.productionSourceInfo
+import org.jetbrains.kotlin.idea.caches.project.testSourceInfo
 import org.jetbrains.kotlin.idea.core.script.dependencies.ScriptRelatedModulesProvider
 import org.jetbrains.kotlin.idea.core.script.scriptRelatedModuleName
 
 class ScratchModuleDependencyProvider : ScriptRelatedModulesProvider() {
-    override fun getRelatedModules(file: VirtualFile, project: Project): List<Module> {
+    override fun getRelatedModules(file: VirtualFile, project: Project): List<IdeaModuleInfo> {
         if (ScratchFileService.isInScratchRoot(file)) {
             val scratchModule = file.scriptRelatedModuleName?.let { ModuleManager.getInstance(project).findModuleByName(it) }
             if (scratchModule != null) {
-                return listOf(scratchModule)
+                return (scratchModule.productionSourceInfo() ?: scratchModule.testSourceInfo())?.dependencies() ?: emptyList()
             }
         }
         return emptyList()
