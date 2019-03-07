@@ -60,9 +60,7 @@ private fun MethodInliner.getLambdaIfExistsAndMarkInstructions(
 
     getLambdaIfExists(insnNode)?.let {
         //delete lambda aload instruction
-        if (it is InlineableLambdaInfo) {
-            toDelete.add(insnNode)
-        }
+        toDelete.add(insnNode)
         return it
     }
 

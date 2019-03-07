@@ -409,8 +409,8 @@ abstract class InlineCodegen<out T : BaseExpressionCodegen>(
     private fun putClosureParametersOnStack() {
         for (next in expressionMap.values) {
             //closure parameters for bounded callable references are generated inplace
-            if (next is InlineableExpressionLambda) {
-                if (next.isBoundCallableReference) continue
+            if (next is InlineableExpressionLambda && next.isBoundCallableReference) continue
+            if (next is InlineableLambdaInfo) {
                 putClosureParametersOnStack(next, null)
             }
         }

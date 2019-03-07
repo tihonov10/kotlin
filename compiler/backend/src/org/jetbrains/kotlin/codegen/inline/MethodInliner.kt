@@ -531,7 +531,6 @@ class MethodInliner(
 
                             var offset = 0
                             var capturesAnonymousObjectThatMustBeRegenerated = false
-                            val crosssinlineIndices = arrayListOf<Int>()
                             for (i in 0 until paramCount) {
                                 val sourceValue = frame.getStack(firstParameterIndex + i)
                                 val lambdaInfo = getLambdaIfExistsAndMarkInstructions(

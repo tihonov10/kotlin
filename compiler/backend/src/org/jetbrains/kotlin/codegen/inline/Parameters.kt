@@ -16,7 +16,6 @@
 
 package org.jetbrains.kotlin.codegen.inline
 
-import org.jetbrains.kotlin.utils.sure
 import org.jetbrains.org.objectweb.asm.Type
 import java.util.*
 
@@ -55,9 +54,7 @@ class Parameters(val parameters: List<ParameterInfo>) : Iterable<ParameterInfo> 
     }
 
     fun getDeclarationSlot(info: ParameterInfo): Int {
-        return paramToDeclByteCodeIndex[info].sure {
-            "BOO"
-        }
+        return paramToDeclByteCodeIndex[info]!!
     }
 
     fun getParameterByDeclarationSlot(index: Int): ParameterInfo {
