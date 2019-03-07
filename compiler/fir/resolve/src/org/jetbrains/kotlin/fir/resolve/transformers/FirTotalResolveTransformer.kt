@@ -14,7 +14,6 @@ class FirTotalResolveTransformer {
         FirImportResolveTransformer(),
         FirTypeResolveTransformer(),
         FirStatusResolveTransformer(),
-        FirAccessResolveTransformer(),
         FirBodyResolveTransformerAdapter()
     )
 
