@@ -18,7 +18,9 @@ import org.jetbrains.kotlin.fir.symbols.ConeCallableSymbol
 import org.jetbrains.kotlin.fir.symbols.ConeFunctionSymbol
 import org.jetbrains.kotlin.fir.symbols.ConePropertySymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirFunctionSymbol
+import org.jetbrains.kotlin.fir.typeContext
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
+import org.jetbrains.kotlin.fir.types.ConeTypeContext
 import org.jetbrains.kotlin.fir.types.FirTypeRef
 import org.jetbrains.kotlin.name.Name
 
@@ -33,10 +35,12 @@ class JavaClassUseSiteScope(
     //base symbol as key, overridden as value
     val overrides = mutableMapOf<ConeFunctionSymbol, ConeFunctionSymbol?>()
 
-    @Suppress("UNUSED_PARAMETER")
+    val context: ConeTypeContext = session.typeContext
+
     private fun isEqualTypes(a: ConeKotlinType, b: ConeKotlinType): Boolean {
-        // TODO: introduce normal type comparison
-        return true
+        with(context) {
+            return isEqualTypeConstructors(a.typeConstructor(), b.typeConstructor())
+        }
     }
 
     private fun isEqualTypes(a: FirTypeRef, b: FirTypeRef) =

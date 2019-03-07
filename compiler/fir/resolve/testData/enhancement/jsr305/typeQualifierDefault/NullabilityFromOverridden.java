@@ -119,7 +119,7 @@ public class C extends A implements AInt {
 
     // fake override for foo3 shouldn't have any conflicts
 
-    // no conflicts, covariant override
+    // no conflicts, covariant override (TODO: x should be nullable here)
     public String bar1(String x) { return ""; }
     // no conflicts
     @Nullable
