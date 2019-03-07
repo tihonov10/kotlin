@@ -5,7 +5,6 @@
 
 package org.jetbrains.kotlin.js.test
 
-import org.jetbrains.kotlin.js.test.interop.RuntimeContext
 import org.jetbrains.kotlin.js.test.interop.ScriptEngine
 import org.jetbrains.kotlin.js.test.interop.ScriptEngineNashorn
 import org.jetbrains.kotlin.js.test.interop.ScriptEngineV8
@@ -72,11 +71,12 @@ abstract class AbstractJsTestChecker {
     protected abstract fun run(files: List<String>, f: ScriptEngine.() -> Any?): Any?
 }
 
-fun ScriptEngine.runAndRestoreContext(originalContext: RuntimeContext = getGlobalContext(), f: ScriptEngine.() -> Any?): Any? {
+fun ScriptEngine.runAndRestoreContext(f: ScriptEngine.() -> Any?): Any? {
     return try {
+        saveState()
         f()
     } finally {
-        restoreState(originalContext)
+        restoreState()
     }
 }
 
@@ -85,14 +85,10 @@ abstract class AbstractNashornJsTestChecker : AbstractJsTestChecker() {
     private var engineUsageCnt = 0
 
     private var engineCache: ScriptEngineNashorn? = null
-    private lateinit var globalObject: RuntimeContext
-    private lateinit var originalState: RuntimeContext
 
     protected val engine: ScriptEngineNashorn
         get() = engineCache ?: createScriptEngineForTest().also {
             engineCache = it
-            globalObject = it.getGlobalContext()
-            originalState = ScriptEngineNashorn.NashornRuntimeContext(globalObject.toMap().toMutableMap())
         }
 
     protected open fun beforeRun() {}
@@ -106,7 +102,7 @@ abstract class AbstractNashornJsTestChecker : AbstractJsTestChecker() {
 
         beforeRun()
 
-        return engine.runAndRestoreContext(originalState) {
+        return engine.runAndRestoreContext {
             files.forEach { loadFile(it) }
             f()
         }
@@ -166,7 +162,6 @@ abstract class AbstractV8JsTestChecker : AbstractJsTestChecker() {
 
 object V8JsTestChecker : AbstractV8JsTestChecker() {
     override val engine by lazy { createV8Engine() }
-    private lateinit var originalState: ScriptEngineV8.V8RuntimeContext
 
     private fun createV8Engine(): ScriptEngineV8 {
         val v8 = ScriptEngineV8()
@@ -177,7 +172,6 @@ object V8JsTestChecker : AbstractV8JsTestChecker() {
         ).forEach { v8.loadFile(it) }
 
         v8.overrideAsserter()
-        originalState = v8.getGlobalContext()
 
         return v8
     }
@@ -192,7 +186,7 @@ object V8JsTestChecker : AbstractV8JsTestChecker() {
 
     override fun run(files: List<String>, f: ScriptEngine.() -> Any?): Any? {
         engine.evalVoid(SETUP_KOTLIN_OUTPUT)
-        return engine.runAndRestoreContext(originalState) {
+        return engine.runAndRestoreContext {
             files.forEach { loadFile(it) }
             f()
         }

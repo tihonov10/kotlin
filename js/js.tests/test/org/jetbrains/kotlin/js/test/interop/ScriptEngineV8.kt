@@ -17,26 +17,15 @@ class ScriptEngineV8 : ScriptEngine {
         (t as? V8Object)?.release()
     }
 
-    inner class V8RuntimeContext(contextKeys: List<String>, contextValues: List<Any?>) : RuntimeContext {
-        private val map = contextKeys.zip(contextValues).toMap()
+    private var savedState: List<String>? = null
 
-        override val keys = map.keys
-        override val values = map.values
-
-        override operator fun get(k: String) = map[k]
-        override operator fun set(k: String, v: Any?) {
-            evalVoid("this['$k'] = ${v?.toString() ?: "void 0"}")
-        }
-
-        override fun toMap() = map
-    }
-
-    override fun restoreState(originalContext: RuntimeContext) {
+    override fun restoreState() {
         val scriptBuilder = StringBuilder()
 
         val globalState = getGlobalPropertyNames()
+        val originalState = savedState!!
         for (key in globalState) {
-            if (key !in originalContext) {
+            if (key !in originalState) {
                 scriptBuilder.append("this['$key'] = void 0;\n")
             }
         }
@@ -50,11 +39,9 @@ class ScriptEngineV8 : ScriptEngine {
         return javaArray
     }
 
-    override fun getGlobalContext(): V8RuntimeContext {
+    override fun saveState() {
         val v8ArrayKeys = eval<V8Array>("Object.getOwnPropertyNames(this)")
-        val javaArrayKeys = V8ObjectUtils.toList(v8ArrayKeys).also { v8ArrayKeys.release() } as List<String>
-        val javaArrayValues = arrayOfNulls<Any?>(javaArrayKeys.size)
-        return V8RuntimeContext(javaArrayKeys, javaArrayValues.toList())
+        savedState = V8ObjectUtils.toList(v8ArrayKeys).also { v8ArrayKeys.release() } as List<String>
     }
 
     private val myRuntime: V8 = V8.createV8Runtime("global")
@@ -89,10 +76,10 @@ class ScriptEngineV8 : ScriptEngine {
     }
 }
 
-class ScriptEngineV8Lazy: ScriptEngine {
+class ScriptEngineV8Lazy : ScriptEngine {
     override fun <T> eval(script: String) = engine.eval<T>(script)
 
-    override fun getGlobalContext() = engine.getGlobalContext()
+    override fun saveState() = engine.saveState()
 
     override fun evalVoid(script: String) = engine.evalVoid(script)
 
@@ -104,7 +91,7 @@ class ScriptEngineV8Lazy: ScriptEngine {
 
     override fun <T> releaseObject(t: T) = engine.releaseObject(t)
 
-    override fun restoreState(originalContext: RuntimeContext) = engine.restoreState(originalContext)
+    override fun restoreState() = engine.restoreState()
 
     private val engine by lazy { ScriptEngineV8() }
 }

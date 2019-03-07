@@ -11,7 +11,6 @@ import org.jetbrains.kotlin.js.facade.MainCallParameters
 import org.jetbrains.kotlin.js.test.BasicBoxTest
 import org.jetbrains.kotlin.js.test.JsIrTestRuntime
 import org.jetbrains.kotlin.js.test.NashornJsTestChecker
-import org.jetbrains.kotlin.js.test.V8JsTestChecker
 import java.io.File
 import javax.script.ScriptException
 

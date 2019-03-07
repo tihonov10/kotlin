@@ -7,11 +7,12 @@ package org.jetbrains.kotlin.js.test.interop
 
 interface ScriptEngine {
     fun <T> eval(script: String): T
-    fun getGlobalContext(): RuntimeContext
     fun evalVoid(script: String)
     fun <T> callMethod(obj: Any, name: String, vararg args: Any?): T
     fun loadFile(path: String)
     fun release()
     fun <T> releaseObject(t: T)
-    fun restoreState(originalContext: RuntimeContext)
+
+    fun saveState()
+    fun restoreState()
 }

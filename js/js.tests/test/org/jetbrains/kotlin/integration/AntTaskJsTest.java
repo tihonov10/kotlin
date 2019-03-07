@@ -20,6 +20,7 @@ import com.intellij.openapi.util.io.FileUtil;
 import kotlin.collections.CollectionsKt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.kotlin.js.test.NashornJsTestChecker;
 import org.jetbrains.kotlin.js.test.V8JsTestChecker;
 import org.jetbrains.kotlin.test.KotlinTestUtils;
 
@@ -31,6 +32,7 @@ import java.util.List;
 
 public class AntTaskJsTest extends AbstractAntTaskTest {
     private static final String JS_OUT_FILE = "out.js";
+    private static final Boolean useHashorn = Boolean.getBoolean(System.getProperty("kotlin.js.useNashorn", "false"));
 
     @NotNull
     private String getTestDataDir() {
@@ -58,7 +60,7 @@ public class AntTaskJsTest extends AbstractAntTaskTest {
 
         List<String> filePaths = CollectionsKt.map(fileNames, s -> getOutputFileByName(s).getAbsolutePath());
 
-        V8JsTestChecker.INSTANCE.check(filePaths, "out", "foo", "box", "OK", withModuleSystem);
+        (useHashorn ? NashornJsTestChecker.INSTANCE : V8JsTestChecker.INSTANCE).check(filePaths, "out", "foo", "box", "OK", withModuleSystem);
     }
 
     private void doJsAntTestForPostfixPrefix(@Nullable String prefix, @Nullable String postfix) throws Exception {

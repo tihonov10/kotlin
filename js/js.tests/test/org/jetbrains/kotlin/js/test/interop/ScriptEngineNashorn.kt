@@ -10,19 +10,7 @@ import jdk.nashorn.internal.runtime.ScriptRuntime
 import javax.script.Invocable
 
 class ScriptEngineNashorn : ScriptEngine {
-
-
-    class NashornRuntimeContext(private val map: MutableMap<String, Any?>) : RuntimeContext {
-        override val keys = map.keys
-        override val values = map.values
-
-        override operator fun get(k: String) = map[k]
-        override operator fun set(k: String, v: Any?) {
-            map[k] = v
-        }
-
-        override fun toMap() = map.toMap()
-    }
+    private var savedState: Map<String, Any?>? = null
 
     // TODO use "-strict"
     private val myEngine = NashornScriptEngineFactory().getScriptEngine("--language=es5", "--no-java", "--no-syntax-extensions")
@@ -36,10 +24,6 @@ class ScriptEngineNashorn : ScriptEngine {
         myEngine.eval(script)
     }
 
-    override fun getGlobalContext(): NashornRuntimeContext {
-        return NashornRuntimeContext(eval("this"))
-    }
-
     @Suppress("UNCHECKED_CAST")
     override fun <T> callMethod(obj: Any, name: String, vararg args: Any?): T {
         return (myEngine as Invocable).invokeMethod(obj, name, *args) as T
@@ -51,11 +35,19 @@ class ScriptEngineNashorn : ScriptEngine {
 
     override fun release() {}
     override fun <T> releaseObject(t: T) {}
-    override fun restoreState(originalContext: RuntimeContext) {
-        require(originalContext is NashornRuntimeContext)
-        val globalContext = getGlobalContext()
-        for (key in globalContext.keys) {
-            globalContext[key] = originalContext[key] ?: ScriptRuntime.UNDEFINED
+
+
+    private fun getGlobalState(): MutableMap<String, Any?> = eval("this")
+
+    override fun saveState() {
+        savedState = getGlobalState().toMap()
+    }
+
+    override fun restoreState() {
+        val globalState = getGlobalState()
+        val originalState = savedState!!
+        for (key in globalState.keys) {
+            globalState[key] = originalState[key] ?: ScriptRuntime.UNDEFINED
         }
     }
 }
