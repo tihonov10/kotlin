@@ -493,7 +493,11 @@ open class DeepCopyIrTree : IrElementTransformerVoid() {
 
     override fun visitPropertyReference(expression: IrPropertyReference): IrExpression {
         val newProperty = mapPropertyReference(expression.descriptor)
-        val newFieldSymbol = if (newProperty.getter == null) IrFieldSymbolImpl(newProperty) else null
+        val newFieldSymbol =
+            if (newProperty == expression.descriptor)
+                expression.field
+            else
+                IrFieldSymbolImpl(newProperty.original)
         val newGetterSymbol = newProperty.getter?.let { IrSimpleFunctionSymbolImpl(it.original) }
         val newSetterSymbol = newProperty.setter?.let { IrSimpleFunctionSymbolImpl(it.original) }
         return IrPropertyReferenceImpl(
