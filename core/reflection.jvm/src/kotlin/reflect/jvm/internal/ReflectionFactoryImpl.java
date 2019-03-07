@@ -118,7 +118,7 @@ public class ReflectionFactoryImpl extends ReflectionFactory {
 
     // typeOf
 
-    @Override
+    //@Override
     public KType typeOf(KClassifier klass, List<KTypeProjection> arguments, boolean isMarkedNullable) {
         return KClassifiers.createType(klass, arguments, isMarkedNullable, Collections.<Annotation>emptyList());
     }
