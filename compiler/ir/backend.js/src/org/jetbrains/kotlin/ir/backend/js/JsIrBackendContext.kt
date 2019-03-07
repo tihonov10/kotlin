@@ -24,12 +24,14 @@ import org.jetbrains.kotlin.ir.SourceRangeInfo
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.backend.js.lower.CallableReferenceKey
 import org.jetbrains.kotlin.ir.backend.js.lower.ConstructorPair
-import org.jetbrains.kotlin.ir.backend.js.lower.inline.ModuleIndex
 import org.jetbrains.kotlin.ir.backend.js.utils.OperatorNames
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.descriptors.IrBuiltIns
-import org.jetbrains.kotlin.ir.symbols.*
+import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
+import org.jetbrains.kotlin.ir.symbols.IrEnumEntrySymbol
+import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
+import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.impl.IrDynamicTypeImpl
 import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.util.getPropertyDeclaration
@@ -186,15 +188,6 @@ class JsIrBackendContext(
                         NoLookupLocation.FROM_BACKEND
                     ).filterNot { it.isExpect }.single().getter!!
                 )
-
-            override val lateinitIsInitializedPropertyGetter =
-                symbolTable.referenceSimpleFunction(
-                    module.getPackage(kotlinPackageFqn).memberScope.getContributedVariables(
-                        Name.identifier("isInitialized"), NoLookupLocation.FROM_BACKEND
-                    ).single {
-                        it.extensionReceiverParameter != null && !it.isExternal
-                    }.getter!!
-                )
         }
 
         override fun shouldGenerateHandlerParameterForDefaultBodyFun() = true
@@ -245,8 +238,6 @@ class JsIrBackendContext(
             )
             return vars.single()
         }
-
-    val lateinitIsInitializedPropertyGetter = ir.symbols.lateinitIsInitializedPropertyGetter
 
     val captureStackSymbol = symbolTable.referenceSimpleFunction(getInternalFunctions("captureStack").single())
     val newThrowableSymbol = symbolTable.referenceSimpleFunction(getInternalFunctions("newThrowable").single())
