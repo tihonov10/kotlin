@@ -187,7 +187,7 @@ fun IrBuilderWithScope.irNotEquals(arg1: IrExpression, arg2: IrExpression) =
         irEquals(arg1, arg2, origin = IrStatementOrigin.EXCLEQ)
     )
 
-fun IrBuilderWithScope.irGet(type: IrType, receiver: IrExpression, getterSymbol: IrFunctionSymbol): IrCall =
+fun IrBuilderWithScope.irGet(type: IrType, receiver: IrExpression?, getterSymbol: IrFunctionSymbol): IrCall =
     IrGetterCallImpl(
         startOffset, endOffset,
         type,
@@ -196,6 +196,18 @@ fun IrBuilderWithScope.irGet(type: IrType, receiver: IrExpression, getterSymbol:
         dispatchReceiver = receiver,
         extensionReceiver = null,
         origin = IrStatementOrigin.GET_PROPERTY
+    )
+
+fun IrBuilderWithScope.irSet(type: IrType, receiver: IrExpression?, getterSymbol: IrFunctionSymbol, value: IrExpression): IrCall =
+    IrSetterCallImpl(
+        startOffset, endOffset,
+        type,
+        getterSymbol, getterSymbol.descriptor,
+        typeArgumentsCount = 0,
+        dispatchReceiver = receiver,
+        extensionReceiver = null,
+        argument = value,
+        origin = IrStatementOrigin.EQ
     )
 
 fun IrBuilderWithScope.irCall(callee: IrFunctionSymbol, type: IrType, typeArguments: List<IrType> = emptyList()): IrCall =
