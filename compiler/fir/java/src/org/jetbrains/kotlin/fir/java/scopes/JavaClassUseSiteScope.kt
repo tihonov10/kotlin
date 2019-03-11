@@ -5,6 +5,7 @@
 
 package org.jetbrains.kotlin.fir.java.scopes
 
+import org.jetbrains.kotlin.builtins.jvm.JavaToKotlinClassMap
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirNamedFunction
@@ -19,6 +20,7 @@ import org.jetbrains.kotlin.fir.symbols.ConeFunctionSymbol
 import org.jetbrains.kotlin.fir.symbols.ConePropertySymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirFunctionSymbol
 import org.jetbrains.kotlin.fir.typeContext
+import org.jetbrains.kotlin.fir.types.ConeClassLikeType
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.ConeTypeContext
 import org.jetbrains.kotlin.fir.types.FirTypeRef
@@ -39,6 +41,13 @@ class JavaClassUseSiteScope(
 
     private fun isEqualTypes(a: ConeKotlinType, b: ConeKotlinType): Boolean {
         with(context) {
+            if (a is ConeClassLikeType && b is ConeClassLikeType) {
+                val aId = a.lookupTag.classId
+                val bId = b.lookupTag.classId
+                val aMapped = JavaToKotlinClassMap.mapJavaToKotlin(aId.asSingleFqName()) ?: aId
+                val bMapped = JavaToKotlinClassMap.mapJavaToKotlin(bId.asSingleFqName()) ?: bId
+                return aMapped == bMapped
+            }
             return isEqualTypeConstructors(a.typeConstructor(), b.typeConstructor())
         }
     }
