@@ -3,4 +3,6 @@
 
     public abstract operator function equals(obj: R|ft<kotlin/Any, kotlin/Any?>|!): R|kotlin/Boolean|
 
+    public open operator function equals(<anonymous Java parameter>: R|ft<kotlin/Any, kotlin/Any?>|!): R|kotlin/Boolean|
+
 }

@@ -63,7 +63,8 @@ class FirJavaClass(
                 if (useSiteSuperType is ConeClassErrorType) return@mapNotNullTo null
                 val symbol = useSiteSuperType.lookupTag.toSymbol(useSiteSession)
                 if (symbol is FirClassSymbol) {
-                    symbol.fir.buildJavaUseSiteScope(useSiteSession)
+                    // We need JavaClassEnhancementScope here to have already enhanced signatures from supertypes
+                    JavaClassEnhancementScope(useSiteSession, symbol.fir.buildJavaUseSiteScope(useSiteSession))
                 } else {
                     null
                 }
