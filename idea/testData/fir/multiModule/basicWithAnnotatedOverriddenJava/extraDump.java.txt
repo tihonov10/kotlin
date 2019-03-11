@@ -3,6 +3,6 @@ public open class Annotated : R|java/lang/Object| {
 
 }
 public open class AnnotatedDerived : R|Annotated| {
-    public open operator function foo(param: R|kotlin/String|?): R|kotlin/String|
+    public open operator function foo(param: R|ft<kotlin/String, kotlin/String?>|!): R|ft<kotlin/String, kotlin/String?>|!
 
 }
