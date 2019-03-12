@@ -121,7 +121,7 @@ class PsiSourceCompilerForInline(private val codegen: ExpressionCodegen, overrid
 
             val signature = codegen.state.typeMapper.mapSignatureSkipGeneric(context.functionDescriptor, context.contextKind)
             return InlineCallSiteInfo(
-                parentCodegen.className, signature.asmMethod.name, signature.asmMethod.descriptor
+                parentCodegen.className, signature.asmMethod.name, signature.asmMethod.descriptor, compilationContextFunctionDescriptor.isInline
             )
         }
 
