@@ -184,6 +184,7 @@ interface ConeTypeContext : TypeSystemContext, TypeSystemOptimizationContext {
     }
 
     override fun TypeConstructorMarker.supertypes(): Collection<KotlinTypeMarker> {
+        if (this is ErrorTypeConstructor) return emptyList()
         require(this is ConeSymbol)
         return when (this) {
             is ConeTypeParameterSymbol -> emptyList()
@@ -224,6 +225,7 @@ interface ConeTypeContext : TypeSystemContext, TypeSystemOptimizationContext {
     }
 
     override fun isEqualTypeConstructors(c1: TypeConstructorMarker, c2: TypeConstructorMarker): Boolean {
+        if (c1 is ErrorTypeConstructor || c2 is ErrorTypeConstructor) return false
         assert(c1 is ConeSymbol)
         assert(c2 is ConeSymbol)
         return c1 == c2
@@ -245,7 +247,7 @@ interface ConeTypeContext : TypeSystemContext, TypeSystemOptimizationContext {
     }
 
     override fun captureFromArguments(type: SimpleTypeMarker, status: CaptureStatus): SimpleTypeMarker? {
-        TODO("not implemented")
+        return type //TODO
     }
 
     override fun SimpleTypeMarker.asArgumentList(): TypeArgumentListMarker {
@@ -270,7 +272,8 @@ interface ConeTypeContext : TypeSystemContext, TypeSystemOptimizationContext {
 
 
     override fun KotlinTypeMarker.isNotNullNothing(): Boolean {
-        TODO("Not impl")
+        require(this is ConeKotlinType)
+        return this.typeConstructor().isNothingConstructor() && !this.nullability.isNullable
     }
 
 

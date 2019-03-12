@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.fir.declarations.FirNamedFunction
 import org.jetbrains.kotlin.fir.declarations.impl.FirDeclarationStatusImpl
 import org.jetbrains.kotlin.fir.declarations.impl.FirMemberFunctionImpl
 import org.jetbrains.kotlin.fir.declarations.impl.FirValueParameterImpl
+import org.jetbrains.kotlin.fir.resolve.transformers.ReturnTypeCalculatorWithJump
 import org.jetbrains.kotlin.fir.scopes.FirScope
 import org.jetbrains.kotlin.fir.scopes.ProcessorAction
 import org.jetbrains.kotlin.fir.symbols.*
@@ -99,6 +100,8 @@ class FirClassSubstitutionScope(
         return unsubstituted.processPropertiesByName(name, processor)
     }
 
+    private val typeCalculator by lazy { ReturnTypeCalculatorWithJump(session) }
+
     private fun createFakeOverride(
         original: ConeFunctionSymbol,
         name: Name
@@ -107,7 +110,7 @@ class FirClassSubstitutionScope(
         val receiverType = member.receiverTypeRef?.coneTypeUnsafe()
         val newReceiverType = receiverType?.substitute()
 
-        val returnType = member.returnTypeRef.coneTypeUnsafe()
+        val returnType = typeCalculator.tryCalculateReturnType(member).type
         val newReturnType = returnType.substitute()
 
         val newParameterTypes = member.valueParameters.map {

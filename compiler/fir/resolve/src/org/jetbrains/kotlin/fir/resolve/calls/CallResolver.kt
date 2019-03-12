@@ -250,9 +250,10 @@ class VariableInvokeApplicabilityChecker(val variableName: Name) : FunctionAppli
 
             val lastCandidate = variableChecker.candidates.lastOrNull()
             if (variableChecker.currentApplicability == CandidateApplicability.RESOLVED && lastCandidate == symbol) {
+
                 val receiverScope =
-                    resolver.typeCalculator.tryCalculateReturnType(lastCandidate.firUnsafe())?.type
-                        ?.scope(resolver.session)
+                    resolver.typeCalculator.tryCalculateReturnType(lastCandidate.firUnsafe()).type
+                        .scope(resolver.session)
 
 
                 lookupInvoke = true
