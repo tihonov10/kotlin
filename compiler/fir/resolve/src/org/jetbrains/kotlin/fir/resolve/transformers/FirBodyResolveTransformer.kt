@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.fir.references.FirSimpleNamedReference
 import org.jetbrains.kotlin.fir.resolve.FirProvider
 import org.jetbrains.kotlin.fir.resolve.FirSymbolProvider
 import org.jetbrains.kotlin.fir.resolve.calls.*
+import org.jetbrains.kotlin.fir.resolve.defaultType
 import org.jetbrains.kotlin.fir.resolve.scope
 import org.jetbrains.kotlin.fir.scopes.*
 import org.jetbrains.kotlin.fir.scopes.impl.*
@@ -88,18 +89,7 @@ open class FirBodyResolveTransformer(val session: FirSession, val implicitTypeOn
         }
     }
 
-    private fun FirRegularClass.defaultType(): ConeClassTypeImpl {
-        return ConeClassTypeImpl(
-            symbol.toLookupTag(),
-            typeParameters.map {
-                ConeTypeParameterTypeImpl(
-                    it.symbol.toLookupTag(),
-                    isNullable = false
-                )
-            }.toTypedArray(),
-            isNullable = false
-        )
-    }
+
 
 
     protected inline fun <T> withScopeCleanup(scopes: MutableList<*>, crossinline l: () -> T): T {
@@ -138,7 +128,7 @@ open class FirBodyResolveTransformer(val session: FirSession, val implicitTypeOn
                 is FirErrorNamedReference ->
                     FirErrorTypeRefImpl(session, access.psi, newCallee.errorReason)
                 is FirResolvedCallableReference ->
-                    jump.tryCalculateReturnType(newCallee.callableSymbol.firUnsafe())!!
+                    jump.tryCalculateReturnType(newCallee.callableSymbol.firUnsafe()) ?: FirErrorTypeRefImpl(session, null, "cycle")
                 else -> return
             }
     }
@@ -396,9 +386,10 @@ open class FirBodyResolveTransformer(val session: FirSession, val implicitTypeOn
                 file.session
             )
 
-            transformer.transformElement(file, null)
+            file.transform(transformer, null)
 
             val newReturnTypeRef = declaration.returnTypeRef
+            if (newReturnTypeRef is FirImplicitTypeRef) return null
             require(newReturnTypeRef is FirResolvedTypeRef) { declaration.render() }
             return newReturnTypeRef
         }

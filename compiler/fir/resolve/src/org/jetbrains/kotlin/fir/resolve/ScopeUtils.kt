@@ -18,6 +18,8 @@ import org.jetbrains.kotlin.fir.scopes.lookupSuperTypes
 import org.jetbrains.kotlin.fir.symbols.ConeTypeParameterSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.types.*
+import org.jetbrains.kotlin.fir.types.impl.ConeClassTypeImpl
+import org.jetbrains.kotlin.fir.types.impl.ConeTypeParameterTypeImpl
 
 fun ConeKotlinType.scope(useSiteSession: FirSession): FirScope? {
     return when (this) {
@@ -68,4 +70,17 @@ private fun FirRegularClass.buildUseSiteScope(useSiteSession: FirSession = sessi
             }
         }
     return FirClassUseSiteScope(useSiteSession, superTypeScope, declaredScope, true)
+}
+
+fun FirRegularClass.defaultType(): ConeClassTypeImpl {
+    return ConeClassTypeImpl(
+        symbol.toLookupTag(),
+        typeParameters.map {
+            ConeTypeParameterTypeImpl(
+                it.symbol.toLookupTag(),
+                isNullable = false
+            )
+        }.toTypedArray(),
+        isNullable = false
+    )
 }
