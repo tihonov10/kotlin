@@ -20,16 +20,16 @@ internal constructor(@PublishedApi internal val storage: ByteArray) : Collection
     /**
      * Returns the array element at the given [index]. This method can be called using the index operator.
      *
-     * If the [index] is out of bounds of this array, the result is unspecified on the JS
-     * and throws an [IndexOutOfBoundsException] on other platforms.
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * where the behavior is unspecified.
      */
     public operator fun get(index: Int): UByte = storage[index].toUByte()
 
     /**
      * Sets the element at the given [index] to the given [value]. This method can be called using the index operator.
      *
-     * If the [index] is out of bounds of this array, the result is unspecified on the JS
-     * and throws an [IndexOutOfBoundsException] on other platforms.
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * where the behavior is unspecified.
      */
     public operator fun set(index: Int, value: UByte) {
         storage[index] = value.toByte()

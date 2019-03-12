@@ -37,8 +37,8 @@ public class Array<T> {
      * value = arr[index]
      * ```
      *
-     * If the [index] is out of bounds of this array, the result is unspecified on the JS
-     * and throws an [IndexOutOfBoundsException] on other platforms.
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * where the behavior is unspecified.
      */
     public operator fun get(index: Int): T
 
@@ -49,8 +49,8 @@ public class Array<T> {
      * arr[index] = value
      * ```
      *
-     * If the [index] is out of bounds of this array, the result is unspecified on the JS
-     * and throws an [IndexOutOfBoundsException] on other platforms.
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * where the behavior is unspecified.
      */
     public operator fun set(index: Int, value: T): Unit
 
