@@ -146,8 +146,8 @@ class JsIrBackendContext(
 
     fun getOperatorByName(name: Name, type: KotlinType) = operatorMap[name]?.get(type)
 
-    override val ir = object : Ir<CommonBackendContext>(this, irModuleFragment) {
-        override val symbols = object : Symbols<CommonBackendContext>(this@JsIrBackendContext, symbolTable.lazyWrapper) {
+    override val ir = object : Ir<JsIrBackendContext>(this, irModuleFragment) {
+        override val symbols = object : Symbols<JsIrBackendContext>(this@JsIrBackendContext, symbolTable.lazyWrapper) {
             override val ThrowNullPointerException =
                 symbolTable.referenceSimpleFunction(getFunctions(kotlinPackageFqn.child(Name.identifier("THROW_NPE"))).single())
 
@@ -160,12 +160,15 @@ class JsIrBackendContext(
             override val ThrowUninitializedPropertyAccessException =
                 symbolTable.referenceSimpleFunction(getFunctions(FqName("kotlin.throwUninitializedPropertyAccessException")).single())
 
+            override val defaultConstructorMarker =
+                symbolTable.referenceClass(context.getJsInternalClass("DefaultConstructorMarker"))
+
             override val stringBuilder
                 get() = TODO("not implemented")
             override val copyRangeTo: Map<ClassDescriptor, IrSimpleFunctionSymbol>
                 get() = TODO("not implemented")
             override val coroutineImpl =
-                symbolTable.referenceClass(findClass(coroutinePackage.memberScope, COROUTINE_IMPL_NAME.identifier))
+                symbolTable.referenceClass(findClass(coroutinePackage.memberScope, COROUTINE_IMPL_NAME))
             override val coroutineSuspendedGetter =
                 symbolTable.referenceSimpleFunction(
                     coroutineIntrinsicsPackage.memberScope.getContributedVariables(
@@ -260,8 +263,6 @@ class JsIrBackendContext(
         }
     }.toMap()
 
-    private fun findClass(memberScope: MemberScope, className: String) = findClass(memberScope, Name.identifier(className))
-
     private fun findClass(memberScope: MemberScope, name: Name) =
         memberScope.getContributedClassifier(name, NoLookupLocation.FROM_BACKEND) as ClassDescriptor
 
@@ -271,7 +272,8 @@ class JsIrBackendContext(
     private fun findFunctions(memberScope: MemberScope, name: Name) =
         memberScope.getContributedFunctions(name, NoLookupLocation.FROM_BACKEND).toList()
 
-    override fun getInternalClass(name: String) = findClass(internalPackage.memberScope, name)
+    internal fun getJsInternalClass(name: String): ClassDescriptor =
+        findClass(internalPackage.memberScope, Name.identifier(name))
 
     override fun getClass(fqName: FqName) = findClass(module.getPackage(fqName.parent()).memberScope, fqName.shortName())
 
