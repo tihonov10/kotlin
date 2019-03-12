@@ -17,10 +17,20 @@ internal constructor(@PublishedApi internal val storage: IntArray) : Collection<
     /** Creates a new array of the specified [size], with all elements initialized to zero. */
     public constructor(size: Int) : this(IntArray(size))
 
-    /** Returns the array element at the given [index]. This method can be called using the index operator. */
+    /**
+     * Returns the array element at the given [index]. This method can be called using the index operator.
+     *
+     * If the [index] is out of bounds of this array, the result is unspecified on the JS
+     * and throws an [IndexOutOfBoundsException] on other platforms.
+     */
     public operator fun get(index: Int): UInt = storage[index].toUInt()
 
-    /** Sets the element at the given [index] to the given [value]. This method can be called using the index operator. */
+    /**
+     * Sets the element at the given [index] to the given [value]. This method can be called using the index operator.
+     *
+     * If the [index] is out of bounds of this array, the result is unspecified on the JS
+     * and throws an [IndexOutOfBoundsException] on other platforms.
+     */
     public operator fun set(index: Int, value: UInt) {
         storage[index] = value.toInt()
     }

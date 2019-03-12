@@ -428,10 +428,20 @@ class UnsignedArrayGenerator(val type: UnsignedType, out: PrintWriter) : BuiltIn
     /** Creates a new array of the specified [size], with all elements initialized to zero. */
     public constructor(size: Int) : this($storageArrayType(size))
 
-    /** Returns the array element at the given [index]. This method can be called using the index operator. */
+    /**
+     * Returns the array element at the given [index]. This method can be called using the index operator.
+     *
+     * If the [index] is out of bounds of this array, the result is unspecified on the JS
+     * and throws an [IndexOutOfBoundsException] on other platforms.
+     */
     public operator fun get(index: Int): $elementType = storage[index].to$elementType()
 
-    /** Sets the element at the given [index] to the given [value]. This method can be called using the index operator. */
+    /**
+     * Sets the element at the given [index] to the given [value]. This method can be called using the index operator.
+     *
+     * If the [index] is out of bounds of this array, the result is unspecified on the JS
+     * and throws an [IndexOutOfBoundsException] on other platforms.
+     */
     public operator fun set(index: Int, value: $elementType) {
         storage[index] = value.to$storageElementType()
     }
