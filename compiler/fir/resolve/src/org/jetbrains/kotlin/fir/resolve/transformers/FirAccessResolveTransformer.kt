@@ -33,6 +33,7 @@ class FirAccessResolveTransformer : FirAbstractTreeTransformerWithSuperTypes(rev
 
     override fun transformFile(file: FirFile, data: Nothing?): CompositeTransformResult<FirFile> {
         return withScopeCleanup {
+            towerScope.addImports(file, file.session)
             towerScope.scopes += FirTopLevelDeclaredMemberScope(file, file.session)
             super.transformFile(file, data)
         }
