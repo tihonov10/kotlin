@@ -1,16 +1,17 @@
 package org.jetbrains.kotlin.ir.backend.js.lower.serialization.ir
 
 import org.jetbrains.kotlin.backend.common.LoggingContext
-import org.jetbrains.kotlin.backend.common.serialization.DescriptorUniqIdAware
-import org.jetbrains.kotlin.backend.common.serialization.KotlinIrLinker
-import org.jetbrains.kotlin.backend.common.serialization.UniqId
-import org.jetbrains.kotlin.backend.common.serialization.UniqIdKey
+import org.jetbrains.kotlin.backend.common.library.CombinedIrFileReader
+import org.jetbrains.kotlin.backend.common.library.DeclarationId
+import org.jetbrains.kotlin.backend.common.serialization.*
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.ir.backend.common.serialization.knownBuiltins
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.descriptors.IrBuiltIns
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
+import java.io.File
 
 class JsIrLinker(
     currentModule: ModuleDescriptor,
@@ -21,6 +22,7 @@ class JsIrLinker(
     DescriptorUniqIdAware by JsDescriptorUniqIdAware {
 
     private val FUNCTION_INDEX_START: Long
+    val moduleToReaderMap = mutableMapOf<ModuleDescriptor, CombinedIrFileReader>()
 
     init {
         // TODO: think about order
@@ -41,4 +43,17 @@ class JsIrLinker(
     override val descriptorReferenceDeserializer =
         JsDescriptorReferenceDeserializer(currentModule, builtIns, FUNCTION_INDEX_START)
 
+    override fun reader(moduleDescriptor: ModuleDescriptor, uniqId: UniqId) =
+            moduleToReaderMap[moduleDescriptor]!!.declarationBytes(DeclarationId(uniqId.index, uniqId.isLocal))
+
+    override fun deserializeIrModuleHeader(
+        moduleDescriptor: ModuleDescriptor,
+        byteArray: ByteArray,
+        klibLocation: File,
+        deserializationStrategy: DeserializationStrategy
+    ): IrModuleFragment {
+        val irFile = File(klibLocation, "ir/irCombined.knd")
+        moduleToReaderMap[moduleDescriptor] = CombinedIrFileReader(irFile)
+        super.deserializeIrModuleHeader(moduleDescriptor, byteArray, klibLocation, deserializationStrategy)
+    }
 }

@@ -24,13 +24,13 @@ import org.jetbrains.kotlin.ir.types.impl.*
 import org.jetbrains.kotlin.ir.util.IrDeserializer
 import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.util.render
-import org.jetbrains.kotlin.ir.backend.common.serialization.KotlinIr.IrStatement.*
-import org.jetbrains.kotlin.ir.backend.common.serialization.KotlinIr.IrOperation.OperationCase.*
-import org.jetbrains.kotlin.ir.backend.common.serialization.KotlinIr.IrConst.ValueCase.*
-import org.jetbrains.kotlin.ir.backend.common.serialization.KotlinIr.IrDeclarator.DeclaratorCase.*
-import org.jetbrains.kotlin.ir.backend.common.serialization.KotlinIr.IrType.KindCase.*
-import org.jetbrains.kotlin.ir.backend.common.serialization.KotlinIr.IrVarargElement.VarargElementCase
-import org.jetbrains.kotlin.ir.backend.common.serialization.KotlinIr.IrTypeArgument.KindCase.*
+import org.jetbrains.kotlin.backend.common.serialization.KotlinIr.IrStatement.*
+import org.jetbrains.kotlin.backend.common.serialization.KotlinIr.IrOperation.OperationCase.*
+import org.jetbrains.kotlin.backend.common.serialization.KotlinIr.IrConst.ValueCase.*
+import org.jetbrains.kotlin.backend.common.serialization.KotlinIr.IrDeclarator.DeclaratorCase.*
+import org.jetbrains.kotlin.backend.common.serialization.KotlinIr.IrType.KindCase.*
+import org.jetbrains.kotlin.backend.common.serialization.KotlinIr.IrVarargElement.VarargElementCase
+import org.jetbrains.kotlin.backend.common.serialization.KotlinIr.IrTypeArgument.KindCase.*
 
 
 
@@ -746,7 +746,7 @@ abstract class IrModuleDeserializer(
         origin: IrDeclarationOrigin
     ): IrTypeParameter {
         val symbol = deserializeIrSymbol(proto.symbol) as IrTypeParameterSymbol
-        val name = Name.identifier(deserializeString(proto.name))
+        val name = deserializeName(proto.name)
         val variance = deserializeIrTypeVariance(proto.variance)
 
         val parameter = symbolTable.declareGlobalTypeParameter(UNDEFINED_OFFSET, UNDEFINED_OFFSET, irrelevantOrigin,
@@ -886,7 +886,7 @@ abstract class IrModuleDeserializer(
             symbol.descriptor, {
                 IrFunctionImpl(
                     start, end, origin, it,
-                    deserializeName(proto.base.name),,
+                    deserializeName(proto.base.name),
                     deserializeVisibility(proto.base.visibility),
                     deserializeModality(proto.modality),
                     deserializeIrType(proto.base.returnType),
@@ -923,7 +923,7 @@ abstract class IrModuleDeserializer(
             end,
             origin,
             symbol,
-            Name.identifier(deserializeString(proto.name)),
+            deserializeName(proto.name),
             type,
             proto.isVar,
             proto.isConst,
@@ -945,7 +945,7 @@ abstract class IrModuleDeserializer(
             irrelevantOrigin,
             symbol.descriptor
         ) {
-            IrEnumEntryImpl(start, end, origin, it, Name.identifier(deserializeString(proto.name)))
+            IrEnumEntryImpl(start, end, origin, it, deserializeName(proto.name))
         }
 
         if (proto.hasCorrespondingClass()) {
@@ -1022,7 +1022,7 @@ abstract class IrModuleDeserializer(
             { IrFieldImpl(
                     start, end, origin,
                     it,
-                    Name.identifier(deserializeString(proto.name)),
+                    deserializeName(proto.name),
                     type,
                     deserializeVisibility(proto.visibility),
                     proto.isFinal,
@@ -1070,7 +1070,7 @@ abstract class IrModuleDeserializer(
         val property = IrPropertyImpl(
             start, end, origin,
             descriptor,
-            Name.identifier(deserializeString(proto.name)),
+            deserializeName(proto.name),
             deserializeVisibility(proto.visibility),
             deserializeModality(proto.modality),
             proto.isVar,

@@ -5,6 +5,7 @@
 
 package org.jetbrains.kotlin.backend.common.serialization
 
+import com.google.protobuf.ExtensionRegistry
 import org.jetbrains.kotlin.backend.common.LoggingContext
 import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
@@ -30,7 +31,7 @@ abstract class KotlinIrLinker(
     currentModule: ModuleDescriptor,
     logger: LoggingContext,
     builtIns: IrBuiltIns,
-    symbolTable: SymbolTable
+    symbolTable: SymbolTable,
     private val forwardModuleDescriptor: ModuleDescriptor?)
         : IrModuleDeserializer(logger, builtIns, symbolTable),
           DescriptorUniqIdAware {
@@ -187,7 +188,7 @@ abstract class KotlinIrLinker(
         val proto = loadTopLevelDeclarationProto(uniqIdKey)
         return deserializeDeclaration(proto, reversedFileIndex[uniqIdKey]!!)
     }
-    private fun reader(moduleDescriptor: ModuleDescriptor, uniqId: UniqId) = moduleDescriptor.konanLibrary!!.irDeclaration(uniqId.index, uniqId.isLocal)
+    protected abstract fun reader(moduleDescriptor: ModuleDescriptor, uniqId: UniqId): ByteArray
 
     private fun loadTopLevelDeclarationProto(uniqIdKey: UniqIdKey): KotlinIr.IrDeclaration {
         val stream = reader(uniqIdKey.moduleOfOrigin!!, uniqIdKey.uniqId).codedInputStream
@@ -206,7 +207,7 @@ abstract class KotlinIrLinker(
 
         val descriptorUniqId = topLevelDescriptor.getUniqId()
             ?: error("could not get descriptor uniq id for $topLevelDescriptor")
-        val uniqId = UniqId(descriptorUniqId.index, isLocal = false)
+        val uniqId = UniqId(descriptorUniqId, isLocal = false)
         val topLevelKey = UniqIdKey(topLevelDescriptor.module, uniqId)
 
         // This top level descriptor doesn't have a serialized IR declaration.
@@ -341,15 +342,9 @@ abstract class KotlinIrLinker(
         return module
     }
 
-    fun deserializeIrModuleHeader(moduleDescriptor: ModuleDescriptor, byteArray: ByteArray, klibLocation: File, deserializationStrategy: DeserializationStrategy = DeserializationStrategy.ONLY_REFERENCED): IrModuleFragment {
-        if (konan) {
-        val proto = KotlinIr.IrModule.parseFrom(byteArray.codedInputStream, KonanSerializerProtocol.extensionRegistry)
+    open fun deserializeIrModuleHeader(moduleDescriptor: ModuleDescriptor, byteArray: ByteArray, klibLocation: File, deserializationStrategy: DeserializationStrategy = DeserializationStrategy.ONLY_REFERENCED): IrModuleFragment {
+        val proto = KotlinIr.IrModule.parseFrom(byteArray.codedInputStream, ExtensionRegistry.newInstance())
         return deserializeIrModuleHeader(proto, moduleDescriptor, deserializationStrategy)
-        } else {
-        descriptorToDirectoryMap[moduleDescriptor] = File(klibLocation, "ir/")
-        val proto = KotlinIr.IrModule.parseFrom(byteArray.codedInputStream, JsKlibMetadataSerializerProtocol.extensionRegistry)
-        return deserializeIrModule(proto, moduleDescriptor, deserializeAllDeclarations)
-        }
     }
 }
 

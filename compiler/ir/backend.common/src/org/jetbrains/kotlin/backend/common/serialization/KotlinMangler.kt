@@ -142,18 +142,8 @@ abstract class KotlinManglerImpl: KotlinMangler {
         get() = "@${typeToHashString(this.type)}."
 
     open val IrFunction.argsPart get() = this.valueParameters.map {
-
-        // TODO: there are clashes originating from ObjectiveC interop.
-        // kotlinx.cinterop.ObjCClassOf<T>.create(format: kotlin.String): T defined in platform.Foundation in file Foundation.kt
-        // and
-        // kotlinx.cinterop.ObjCClassOf<T>.create(string: kotlin.String): T defined in platform.Foundation in file Foundation.kt
-
-        val argName =
-                /*if (this.hasObjCMethodAnnotation || this.hasObjCFactoryAnnotation || this.isObjCClassMethod()) "${it.name}:" else */
-            ""
-        "$argName${typeToHashString(it.type)}${if (it.isVararg) "_VarArg" else ""}"
+        "${typeToHashString(it.type)}${if (it.isVararg) "_VarArg" else ""}"
     }.joinToString(";")
-
 
     open val IrFunction.signature: String
         get() {
@@ -171,7 +161,7 @@ abstract class KotlinManglerImpl: KotlinMangler {
             return "$extensionReceiverPart($argsPart)$signatureSuffix"
         }
 
-    open val IrFunction.platformSpecificFunctionName: String? = null
+    open val IrFunction.platformSpecificFunctionName: String? get() = null
 
     // TODO: rename to indicate that it has signature included
     open val IrFunction.functionName: String

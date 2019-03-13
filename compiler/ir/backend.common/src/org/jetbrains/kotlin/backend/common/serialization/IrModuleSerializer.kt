@@ -7,6 +7,8 @@ package org.jetbrains.kotlin.backend.common.serialization
 
 import org.jetbrains.kotlin.backend.common.LoggingContext
 import org.jetbrains.kotlin.backend.common.ir.ir2string
+import org.jetbrains.kotlin.backend.common.library.CombinedIrFileWriter
+import org.jetbrains.kotlin.backend.common.library.DeclarationId
 import org.jetbrains.kotlin.backend.common.serialization.DescriptorReferenceSerializer
 import org.jetbrains.kotlin.backend.common.serialization.KotlinMangler
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -24,9 +26,13 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrNullaryPrimitiveImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrUnaryPrimitiveImpl
 import org.jetbrains.kotlin.ir.symbols.*
 import org.jetbrains.kotlin.ir.types.*
+import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
+import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
+import org.jetbrains.kotlin.ir.visitors.acceptVoid
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.Variance
 
-internal class IrModuleSerializer(
+open class IrModuleSerializer(
     val logger: LoggingContext,
     val declarationTable: DeclarationTable,
     val mangler: KotlinMangler,
@@ -82,6 +88,13 @@ internal class IrModuleSerializer(
             protoStringArray.add(value)
             protoStringArray.size - 1
         }
+        return proto.build()
+    }
+
+    fun serializeName(name: Name): KotlinIr.Name {
+        val proto = KotlinIr.Name.newBuilder()
+            .setName(serializeString(name.toString()))
+        if (name.isSpecial) proto.setIsSpecial(true)
         return proto.build()
     }
 
@@ -839,7 +852,7 @@ internal class IrModuleSerializer(
     private fun serializeIrValueParameter(parameter: IrValueParameter): KotlinIr.IrValueParameter {
         val proto = KotlinIr.IrValueParameter.newBuilder()
             .setSymbol(serializeIrSymbol(parameter.symbol))
-            .setName(serializeName(parameter.name.toString()))
+            .setName(serializeName(parameter.name))
             .setIndex(parameter.index)
             .setType(serializeIrType(parameter.type))
             .setIsCrossinline(parameter.isCrossinline)
@@ -854,7 +867,7 @@ internal class IrModuleSerializer(
     private fun serializeIrTypeParameter(parameter: IrTypeParameter): KotlinIr.IrTypeParameter {
         val proto = KotlinIr.IrTypeParameter.newBuilder()
             .setSymbol(serializeIrSymbol(parameter.symbol))
-            .setName(serializeString(parameter.name.toString()))
+            .setName(serializeName(parameter.name))
             .setIndex(parameter.index)
             .setVariance(serializeIrTypeVariance(parameter.variance))
             .setIsReified(parameter.isReified)
@@ -874,7 +887,7 @@ internal class IrModuleSerializer(
 
     private fun serializeIrFunctionBase(function: IrFunction): KotlinIr.IrFunctionBase {
         val proto = KotlinIr.IrFunctionBase.newBuilder()
-            .setName(serializeName(function.name.toString()))
+            .setName(serializeName(function.name))
             .setVisibility(serializeVisibility(function.visibility))
             .setIsInline(function.isInline)
             .setIsExternal(function.isExternal)
@@ -940,7 +953,7 @@ internal class IrModuleSerializer(
 
         val proto = KotlinIr.IrProperty.newBuilder()
             .setIsDelegated(property.isDelegated)
-            .setName(serializeString(property.name.toString()))
+            .setName(serializeName(property.name))
             .setVisibility(serializeVisibility(property.visibility))
             .setModality(serializeModality(property.modality))
             .setIsVar(property.isVar)
@@ -967,7 +980,7 @@ internal class IrModuleSerializer(
     private fun serializeIrField(field: IrField): KotlinIr.IrField {
         val proto = KotlinIr.IrField.newBuilder()
             .setSymbol(serializeIrSymbol(field.symbol))
-            .setName(serializeString(field.name.toString()))
+            .setName(serializeName(field.name))
             .setVisibility(serializeVisibility(field.visibility))
             .setIsFinal(field.isFinal)
             .setIsExternal(field.isExternal)
@@ -983,7 +996,7 @@ internal class IrModuleSerializer(
     private fun serializeIrVariable(variable: IrVariable): KotlinIr.IrVariable {
         val proto = KotlinIr.IrVariable.newBuilder()
             .setSymbol(serializeIrSymbol(variable.symbol))
-            .setName(serializeString(variable.name.toString()))
+            .setName(serializeName(variable.name))
             .setType(serializeIrType(variable.type))
             .setIsConst(variable.isConst)
             .setIsVar(variable.isVar)
@@ -1012,7 +1025,7 @@ internal class IrModuleSerializer(
 
     private fun serializeIrClass(clazz: IrClass): KotlinIr.IrClass {
         val proto = KotlinIr.IrClass.newBuilder()
-            .setName(serializeName(clazz.name.toString()))
+            .setName(serializeName(clazz.name))
             .setSymbol(serializeIrSymbol(clazz.symbol))
             .setKind(serializeClassKind(clazz.kind))
             .setVisibility(serializeVisibility(clazz.visibility))
@@ -1034,7 +1047,7 @@ internal class IrModuleSerializer(
 
     private fun serializeIrEnumEntry(enumEntry: IrEnumEntry): KotlinIr.IrEnumEntry {
         val proto = KotlinIr.IrEnumEntry.newBuilder()
-            .setName(serializeString(enumEntry.name.toString()))
+            .setName(serializeName(enumEntry.name))
             .setSymbol(serializeIrSymbol(enumEntry.symbol))
 
         enumEntry.initializerExpression?.let {
@@ -1099,6 +1112,9 @@ internal class IrModuleSerializer(
         .addAllLineStartOffsets(entry.lineStartOffsets.asIterable())
         .build()
 
+    open fun backendSpecificExplicitRoot(declaration: IrFunction) = false
+    open fun backendSpecificExplicitRoot(declaration: IrClass) = false
+
     fun serializeIrFile(file: IrFile): KotlinIr.IrFile {
         val proto = KotlinIr.IrFile.newBuilder()
             .setFileEntry(serializeFileEntry(file.fileEntry))
@@ -1132,15 +1148,16 @@ internal class IrModuleSerializer(
             }
 
             override fun visitFunction(declaration: IrFunction) {
-                if (declaration.descriptor.annotations.hasAnnotation(RuntimeNames.exportForCppRuntime)
-                        || declaration.descriptor.annotations.hasAnnotation(RuntimeNames.exportForCompilerAnnotation))
+                if (backendSpecificExplicitRoot(declaration)) {
                     proto.addExplicitlyExportedToCompiler(serializeIrSymbol(declaration.symbol))
+                }
                 super.visitDeclaration(declaration)
             }
 
             override fun visitClass(declaration: IrClass) {
-                if (declaration.descriptor.annotations.hasAnnotation(RuntimeNames.exportTypeInfoAnnotation))
+                if (backendSpecificExplicitRoot(declaration)) {
                     proto.addExplicitlyExportedToCompiler(serializeIrSymbol(declaration.symbol))
+                }
                 super.visitDeclaration(declaration)
             }
         })
@@ -1152,7 +1169,7 @@ internal class IrModuleSerializer(
 
     fun serializeModule(module: IrModuleFragment): KotlinIr.IrModule {
         val proto = KotlinIr.IrModule.newBuilder()
-            .setName(serializeString(module.name.toString()))
+            .setName(serializeName(module.name))
 
         val topLevelDeclarationsCount = module.files.sumBy { it.declarations.size }
 
@@ -1178,6 +1195,6 @@ internal class IrModuleSerializer(
 
     fun serializedIrModule(module: IrModuleFragment): SerializedIr {
         val moduleHeader = serializeModule(module).toByteArray()
-        return SerializedIr(moduleHeader, writer.finishWriting().absolutePath, declarationTable.debugIndex)
+        return SerializedIr(moduleHeader, writer.finishWriting().absolutePath)
     }
 }

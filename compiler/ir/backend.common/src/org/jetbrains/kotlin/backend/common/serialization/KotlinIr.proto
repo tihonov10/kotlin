@@ -75,8 +75,8 @@ message IrDeclarationOrigin {
 }
 
 message Name {
-    String name = 1;
-    bool is_special = 2;
+    required String name = 1;
+    required bool is_special = 2;
 }
 
 /* ------ Top Level---------------------------------------------- */
@@ -548,7 +548,7 @@ message IrConstructor {
 message IrField {
   required IrSymbol symbol = 1;
   optional IrExpression initializer = 2;
-  required String name = 3;
+  required Name name = 3;
   required Visibility visibility = 4;
   required bool is_final = 5;
   required bool is_external = 6;
@@ -558,7 +558,7 @@ message IrField {
 
 message IrProperty {
   optional DescriptorReference descriptor_reference = 1; // IrProperty doesn't have a symbol at all. Preserve this rudiment for now.
-  required String name = 2;
+  required Name name = 2;
   required Visibility visibility = 3;
   required ModalityKind modality = 4;
   required bool is_var = 5;
@@ -572,7 +572,7 @@ message IrProperty {
 }
 
 message IrVariable {
-  required String name = 1;
+  required Name name = 1;
   required IrSymbol symbol = 2;
   required IrTypeIndex type = 3;
   required bool is_var = 4;
@@ -610,7 +610,7 @@ message IrValueParameter {
 
 message IrTypeParameter {
   required IrSymbol symbol = 1;
-  required String name = 2;
+  required Name name = 2;
   required int32 index = 3;
   required IrTypeVariance variance = 4;
   repeated IrTypeIndex super_type = 5;
@@ -643,7 +643,7 @@ message IrEnumEntry {
   required IrSymbol symbol = 1;
   optional IrExpression initializer = 2;
   optional IrDeclaration corresponding_class = 3;
-  required String name = 4;
+  required Name name = 4;
 }
 
 message IrAnonymousInit {

@@ -6,7 +6,6 @@
 package org.jetbrains.kotlin.ir.backend.js
 
 import com.intellij.openapi.project.Project
-import jsDescriptorReferenceDeserializerFactory
 import org.jetbrains.kotlin.backend.common.LoggingContext
 import org.jetbrains.kotlin.backend.common.phaser.invokeToplevel
 import org.jetbrains.kotlin.backend.common.serialization.DeserializationStrategy
@@ -20,10 +19,12 @@ import org.jetbrains.kotlin.config.languageVersionSettings
 import org.jetbrains.kotlin.descriptors.impl.CompositePackageFragmentProvider
 import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.LookupTracker
-import org.jetbrains.kotlin.ir.backend.common.serialization.DeclarationTable
 import org.jetbrains.kotlin.ir.backend.common.serialization.DescriptorTable
 import org.jetbrains.kotlin.ir.backend.js.lower.inline.replaceUnboundSymbols
-import org.jetbrains.kotlin.ir.backend.js.lower.serialization.ir.*
+import org.jetbrains.kotlin.ir.backend.js.lower.serialization.ir.JsDeclarationTable
+import org.jetbrains.kotlin.ir.backend.js.lower.serialization.ir.JsIrLinker
+import org.jetbrains.kotlin.ir.backend.js.lower.serialization.ir.JsIrModuleSerializer
+import org.jetbrains.kotlin.ir.backend.js.lower.serialization.ir.newJsDescriptorUniqId
 import org.jetbrains.kotlin.ir.backend.js.lower.serialization.metadata.JsKlibMetadataModuleDescriptor
 import org.jetbrains.kotlin.ir.backend.js.lower.serialization.metadata.JsKlibMetadataSerializationUtil
 import org.jetbrains.kotlin.ir.backend.js.lower.serialization.metadata.JsKlibMetadataVersion
@@ -43,6 +44,9 @@ import org.jetbrains.kotlin.resolve.CompilerDeserializationConfiguration
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
 import org.jetbrains.kotlin.utils.DFS
 import java.io.File
+import java.nio.file.Files.move
+import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 
 class CompiledModule(
     val moduleName: String,
@@ -61,7 +65,6 @@ enum class CompilationMode(val generateJS: Boolean, val generateKlib: Boolean) {
 
 private val moduleHeaderFileName = "module.kji"
 private val declarationsDirName = "ir/"
-private val debugDataFileName = "debug.txt"
 private val logggg = object : LoggingContext {
     override var inVerbosePhase: Boolean
         get() = TODO("not implemented")
@@ -78,7 +81,7 @@ data class JsKlib(
     val moduleIr: IrModuleFragment,
     val symbolTable: SymbolTable,
     val irBuiltIns: IrBuiltIns,
-    val deserializer: KotlinIrLinker
+    val deserializer: JsIrLinker
 )
 
 
@@ -328,7 +331,7 @@ fun serializeModuleIntoKlib(
 ) {
     val declarationTable = JsDeclarationTable(moduleFragment.irBuiltins, DescriptorTable())
 
-    val serializedIr = IrModuleSerializer(logggg, declarationTable, JsMangler).serializedIrModule(moduleFragment)
+    val serializedIr = JsIrModuleSerializer(logggg, declarationTable).serializedIrModule(moduleFragment)
     val serializer = JsKlibMetadataSerializationUtil
 
     val moduleDescription =
@@ -352,20 +355,7 @@ fun serializeModuleIntoKlib(
     moduleFile.writeBytes(serializedIr.module)
 
     val irDeclarationDir = File(klibDir, declarationsDirName).also { it.mkdir() }
-
-    for ((id, data) in serializedIr.declarations) {
-        val file = File(irDeclarationDir, id.declarationFileName)
-        file.writeBytes(data)
-    }
-
-    val debugFile = File(klibDir, debugDataFileName)
-
-    for ((id, data) in serializedIr.debugIndex) {
-        debugFile.appendText(id.toString())
-        debugFile.appendText(" --- ")
-        debugFile.appendText(data)
-        debugFile.appendText("\n")
-    }
+    move(Paths.get(serializedIr.combinedDeclarationFilePath), Paths.get(irDeclarationDir.path), StandardCopyOption.REPLACE_EXISTING)
 
     File(klibDir, "${moduleDescription.name}.${JsKlibMetadataSerializationUtil.CLASS_METADATA_FILE_EXTENSION}").also {
         it.writeBytes(serializedData.asByteArray())
