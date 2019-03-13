@@ -32,9 +32,9 @@ class JavaClassUseSiteScope(
     internal val symbol = klass.symbol
 
     //base symbol as key, overridden as value
-    val overrides = mutableMapOf<ConeFunctionSymbol, ConeFunctionSymbol?>()
+    private val overriddenByBase = mutableMapOf<ConeFunctionSymbol, ConeFunctionSymbol?>()
 
-    val context: ConeTypeContext = session.typeContext
+    private val context: ConeTypeContext = session.typeContext
 
     private fun isEqualTypes(a: ConeKotlinType, b: ConeKotlinType): Boolean {
         if (a is ConeFlexibleType) return isEqualTypes(a.lowerBound, b)
@@ -61,8 +61,8 @@ class JavaClassUseSiteScope(
                 }
     }
 
-    internal fun ConeFunctionSymbol.getOverridden(seen: Set<ConeFunctionSymbol>): ConeCallableSymbol? {
-        if (overrides.containsKey(this)) return overrides[this]
+    internal fun ConeFunctionSymbol.getOverridden(candidates: Set<ConeFunctionSymbol>): ConeCallableSymbol? {
+        if (overriddenByBase.containsKey(this)) return overriddenByBase[this]
 
         fun sameReceivers(memberTypeRef: FirTypeRef?, selfTypeRef: FirTypeRef?): Boolean {
             return when {
@@ -72,27 +72,27 @@ class JavaClassUseSiteScope(
         }
 
         val self = (this as FirFunctionSymbol).fir as FirNamedFunction
-        val overriding = seen.firstOrNull {
+        val overriding = candidates.firstOrNull {
             val member = (it as FirFunctionSymbol).fir as FirNamedFunction
             self.modality != Modality.FINAL
                     && sameReceivers(member.receiverTypeRef, self.receiverTypeRef)
                     && isOverriddenFunCheck(member, self)
         } // TODO: two or more overrides for one fun?
-        overrides[this] = overriding
+        overriddenByBase[this] = overriding
         return overriding
     }
 
     override fun processFunctionsByName(name: Name, processor: (ConeFunctionSymbol) -> ProcessorAction): ProcessorAction {
-        val seen = mutableSetOf<ConeFunctionSymbol>()
+        val overrideCandidates = mutableSetOf<ConeFunctionSymbol>()
         if (!declaredMemberScope.processFunctionsByName(name) {
-                seen += it
+                overrideCandidates += it
                 processor(it)
             }
         ) return ProcessorAction.STOP
 
         return superTypesScope.processFunctionsByName(name) {
 
-            val overriddenBy = it.getOverridden(seen)
+            val overriddenBy = it.getOverridden(overrideCandidates)
             if (overriddenBy == null) {
                 processor(it)
             } else {
@@ -102,13 +102,6 @@ class JavaClassUseSiteScope(
     }
 
     override fun processPropertiesByName(name: Name, processor: (ConePropertySymbol) -> ProcessorAction): ProcessorAction {
-        val seen = mutableSetOf<ConePropertySymbol>()
-        if (!declaredMemberScope.processPropertiesByName(name) {
-                seen += it
-                processor(it)
-            }
-        ) return ProcessorAction.STOP
-
-        return ProcessorAction.NEXT
+        return declaredMemberScope.processPropertiesByName(name) { processor(it) }
     }
 }
