@@ -3,13 +3,14 @@
  * that can be found in the license/LICENSE.txt file.
  */
 
-package org.jetbrains.kotlin.ir.backend.js.lower.serialization.ir
+package org.jetbrains.kotlin.ir.backend.common.serialization
 
+import org.jetbrains.kotlin.backend.common.serialization.KotlinMangler
+import org.jetbrains.kotlin.backend.common.serialization.UniqId
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.IrAnonymousInitializerImpl
 import org.jetbrains.kotlin.ir.descriptors.IrBuiltIns
-import org.jetbrains.kotlin.ir.util.SymbolTable
 
 class DescriptorTable {
     private val descriptors = mutableMapOf<DeclarationDescriptor, Long>()
@@ -20,29 +21,29 @@ class DescriptorTable {
 }
 
 // TODO: We don't manage id clashes anyhow now.
-class DeclarationTable(val builtIns: IrBuiltIns, val descriptorTable: DescriptorTable, val symbolTable: SymbolTable) {
+open class DeclarationTable(val builtIns: IrBuiltIns, val descriptorTable: DescriptorTable, mangler: KotlinMangler): KotlinMangler by mangler {
 
     private val table = mutableMapOf<IrDeclaration, UniqId>()
     val debugIndex = mutableMapOf<UniqId, String>()
     val descriptors = descriptorTable
-    private var currentIndex = 0x1_0000_0000L
-
-    private val FUNCTION_INDEX_START: Long
+    open protected var currentIndex = 0L
 
     init {
-        val known = builtIns.knownBuiltins
-        known.forEach {
+        loadKnownBuiltins()
+    }
+
+    open protected fun loadKnownBuiltins() {
+        builtIns.knownBuiltins.forEach {
             table.put(it, UniqId(currentIndex++, false))
         }
-
-        FUNCTION_INDEX_START = currentIndex
-        currentIndex += BUILT_IN_UNIQ_ID_GAP
     }
 
     fun uniqIdByDeclaration(value: IrDeclaration) = table.getOrPut(value) {
-        val index = if (isBuiltInFunction(value)) {
-            UniqId(FUNCTION_INDEX_START + builtInFunctionId(value), false)
-        } else if (value.origin == IrDeclarationOrigin.FAKE_OVERRIDE ||
+        computeUniqIdByDeclaration(value)
+    }
+
+    open protected fun computeUniqIdByDeclaration(value: IrDeclaration): UniqId {
+        val index = if (value.origin == IrDeclarationOrigin.FAKE_OVERRIDE ||
             !value.isExported()
             || value is IrVariable
             || value is IrTypeParameter
@@ -51,15 +52,10 @@ class DeclarationTable(val builtIns: IrBuiltIns, val descriptorTable: Descriptor
         ) {
             UniqId(currentIndex++, true)
         } else {
-            UniqId(value.uniqIdIndex, false)
+            UniqId(value.hashedMangle, false)
         }
 
-        // It can grow as large as 1/3 of ir/* size.
-        // debugIndex.put(index) {
-        //     "${if (index.isLocal) "" else value.uniqSymbolName()} descriptor = ${value.descriptor}"
-        //}.also {it == null}
-
-        index
+        return index
     }
 }
 

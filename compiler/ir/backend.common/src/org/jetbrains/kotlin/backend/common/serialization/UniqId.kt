@@ -3,12 +3,10 @@
  * that can be found in the license/LICENSE.txt file.
  */
 
-package org.jetbrains.kotlin.ir.backend.js.lower.serialization.ir
+package org.jetbrains.kotlin.backend.common.serialization
 
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.ir.backend.js.lower.serialization.metadata.JsKlibMetadataProtoBuf
-import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
+//import org.jetbrains.kotlin.ir.backend.js.lower.serialization.metadata.JsKlibMetadataProtoBuf
 import org.jetbrains.kotlin.protobuf.GeneratedMessageLite
 
 // This is an abstract uniqIdIndex any serialized IR declarations gets.
@@ -30,32 +28,40 @@ data class UniqIdKey private constructor(val uniqId: UniqId, val moduleDescripto
             : this(uniqId, if (uniqId.isLocal) moduleDescriptor!! else null)
 }
 
-// TODO: think about this
-internal val IrDeclaration.uniqIdIndex: Long
-    get() = this.uniqSymbolName().hashCode().toLong()
-
-fun protoUniqId(uniqId: UniqId): IrKlibProtoBuf.UniqId =
-    IrKlibProtoBuf.UniqId.newBuilder()
+fun protoUniqId(uniqId: UniqId): KotlinIr.UniqId =
+   KotlinIr.UniqId.newBuilder()
        .setIndex(uniqId.index)
        .setIsLocal(uniqId.isLocal)
        .build()
 
-fun IrKlibProtoBuf.UniqId.uniqId(): UniqId = UniqId(this.index, this.isLocal)
-fun IrKlibProtoBuf.UniqId.uniqIdKey(moduleDescriptor: ModuleDescriptor) =
+fun KotlinIr.UniqId.uniqId(): UniqId = UniqId(this.index, this.isLocal)
+fun KotlinIr.UniqId.uniqIdKey(moduleDescriptor: ModuleDescriptor) =
     UniqIdKey(moduleDescriptor, this.uniqId())
 
 fun <T, M:GeneratedMessageLite.ExtendableMessage<M>> M.tryGetExtension(extension: GeneratedMessageLite.GeneratedExtension<M, T>)
         = if (this.hasExtension(extension)) this.getExtension<T>(extension) else null
 
-fun DeclarationDescriptor.getUniqId(): JsKlibMetadataProtoBuf.DescriptorUniqId? = when (this) {
-    is DeserializedClassDescriptor              -> this.classProto.tryGetExtension(JsKlibMetadataProtoBuf.classUniqId)
-    is DeserializedSimpleFunctionDescriptor     -> this.proto.tryGetExtension(JsKlibMetadataProtoBuf.functionUniqId)
-    is DeserializedPropertyDescriptor           -> this.proto.tryGetExtension(JsKlibMetadataProtoBuf.propertyUniqId)
-    is DeserializedClassConstructorDescriptor   -> this.proto.tryGetExtension(JsKlibMetadataProtoBuf.constructorUniqId)
+interface DescriptorUniqIdAware {
+    fun DeclarationDescriptor.getUniqId(): Long?
+}
+/*
+if (konan) {
+
+fun DeclarationDescriptor.getUniqId(): KonanProtoBuf.DescriptorUniqId? = when (this) {
+    is DeserializedClassDescriptor              -> this.classProto.tryGetExtension(KonanProtoBuf.classUniqId)
+    is DeserializedSimpleFunctionDescriptor     -> this.proto.tryGetExtension(KonanProtoBuf.functionUniqId)
+    is DeserializedPropertyDescriptor           -> this.proto.tryGetExtension(KonanProtoBuf.propertyUniqId)
+    is DeserializedClassConstructorDescriptor   -> this.proto.tryGetExtension(KonanProtoBuf.constructorUniqId)
     else -> null
 }
 
-fun newDescriptorUniqId(index: Long): JsKlibMetadataProtoBuf.DescriptorUniqId =
-    JsKlibMetadataProtoBuf.DescriptorUniqId.newBuilder().setIndex(index).build()
+} else {
+*/
 
-val UniqId.declarationFileName: String get() = "$index${if (isLocal) "L" else "G"}.kjd"
+
+//if (konan) {
+//fun newDescriptorUniqId(index: Long): KonanProtoBuf.DescriptorUniqId =
+//    KonanProtoBuf.DescriptorUniqId.newBuilder().setIndex(index).build()
+//} else {
+
+//val UniqId.declarationFileName: String get() = "$index${if (isLocal) "L" else "G"}.kjd"
