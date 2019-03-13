@@ -46,7 +46,7 @@ class JsIrLinker(
     override fun reader(moduleDescriptor: ModuleDescriptor, uniqId: UniqId) =
             moduleToReaderMap[moduleDescriptor]!!.declarationBytes(DeclarationId(uniqId.index, uniqId.isLocal))
 
-    override fun deserializeIrModuleHeader(
+    fun deserializeIrModuleHeader(
         moduleDescriptor: ModuleDescriptor,
         byteArray: ByteArray,
         klibLocation: File,
@@ -54,6 +54,6 @@ class JsIrLinker(
     ): IrModuleFragment {
         val irFile = File(klibLocation, "ir/irCombined.knd")
         moduleToReaderMap[moduleDescriptor] = CombinedIrFileReader(irFile)
-        super.deserializeIrModuleHeader(moduleDescriptor, byteArray, klibLocation, deserializationStrategy)
+        return deserializeIrModuleHeader(moduleDescriptor, byteArray, deserializationStrategy)
     }
 }

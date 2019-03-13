@@ -44,24 +44,5 @@ fun <T, M:GeneratedMessageLite.ExtendableMessage<M>> M.tryGetExtension(extension
 interface DescriptorUniqIdAware {
     fun DeclarationDescriptor.getUniqId(): Long?
 }
-/*
-if (konan) {
-
-fun DeclarationDescriptor.getUniqId(): KonanProtoBuf.DescriptorUniqId? = when (this) {
-    is DeserializedClassDescriptor              -> this.classProto.tryGetExtension(KonanProtoBuf.classUniqId)
-    is DeserializedSimpleFunctionDescriptor     -> this.proto.tryGetExtension(KonanProtoBuf.functionUniqId)
-    is DeserializedPropertyDescriptor           -> this.proto.tryGetExtension(KonanProtoBuf.propertyUniqId)
-    is DeserializedClassConstructorDescriptor   -> this.proto.tryGetExtension(KonanProtoBuf.constructorUniqId)
-    else -> null
-}
-
-} else {
-*/
-
-
-//if (konan) {
-//fun newDescriptorUniqId(index: Long): KonanProtoBuf.DescriptorUniqId =
-//    KonanProtoBuf.DescriptorUniqId.newBuilder().setIndex(index).build()
-//} else {
 
 //val UniqId.declarationFileName: String get() = "$index${if (isLocal) "L" else "G"}.kjd"

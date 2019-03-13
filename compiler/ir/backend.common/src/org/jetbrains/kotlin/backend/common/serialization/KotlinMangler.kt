@@ -21,6 +21,8 @@ interface KotlinMangler {
     val String.hashMangle: Long
     val IrDeclaration.hashedMangle: Long
     fun IrDeclaration.isExported(): Boolean
+    val IrFunction.functionName: String
+
 }
 
 abstract class KotlinManglerImpl: KotlinMangler {
@@ -164,7 +166,7 @@ abstract class KotlinManglerImpl: KotlinMangler {
     open val IrFunction.platformSpecificFunctionName: String? get() = null
 
     // TODO: rename to indicate that it has signature included
-    open val IrFunction.functionName: String
+    override val IrFunction.functionName: String
         get() {
             // TODO: Again. We can't call super in children, so provide a hook for now.
             this.platformSpecificFunctionName ?. let { return it }

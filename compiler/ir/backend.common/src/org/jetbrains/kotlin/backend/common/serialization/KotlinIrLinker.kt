@@ -5,7 +5,6 @@
 
 package org.jetbrains.kotlin.backend.common.serialization
 
-import com.google.protobuf.ExtensionRegistry
 import org.jetbrains.kotlin.backend.common.LoggingContext
 import org.jetbrains.kotlin.backend.common.descriptors.*
 import org.jetbrains.kotlin.descriptors.*
@@ -21,7 +20,7 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.protobuf.ExtensionRegistryLite
+import org.jetbrains.kotlin.protobuf.ExtensionRegistryLite.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedCallableMemberDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
@@ -192,7 +191,7 @@ abstract class KotlinIrLinker(
 
     private fun loadTopLevelDeclarationProto(uniqIdKey: UniqIdKey): KotlinIr.IrDeclaration {
         val stream = reader(uniqIdKey.moduleOfOrigin!!, uniqIdKey.uniqId).codedInputStream
-        return KotlinIr.IrDeclaration.parseFrom(stream, ExtensionRegistryLite.newInstance())
+        return KotlinIr.IrDeclaration.parseFrom(stream, newInstance())
     }
 
     private fun findDeserializedDeclarationForDescriptor(descriptor: DeclarationDescriptor): DeclarationDescriptor? {
@@ -342,8 +341,8 @@ abstract class KotlinIrLinker(
         return module
     }
 
-    open fun deserializeIrModuleHeader(moduleDescriptor: ModuleDescriptor, byteArray: ByteArray, klibLocation: File, deserializationStrategy: DeserializationStrategy = DeserializationStrategy.ONLY_REFERENCED): IrModuleFragment {
-        val proto = KotlinIr.IrModule.parseFrom(byteArray.codedInputStream, ExtensionRegistry.newInstance())
+    fun deserializeIrModuleHeader(moduleDescriptor: ModuleDescriptor, byteArray: ByteArray, deserializationStrategy: DeserializationStrategy = DeserializationStrategy.ONLY_REFERENCED): IrModuleFragment {
+        val proto = KotlinIr.IrModule.parseFrom(byteArray.codedInputStream, newInstance())
         return deserializeIrModuleHeader(proto, moduleDescriptor, deserializationStrategy)
     }
 }

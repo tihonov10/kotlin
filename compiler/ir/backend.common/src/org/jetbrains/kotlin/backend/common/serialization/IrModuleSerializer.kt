@@ -94,7 +94,7 @@ open class IrModuleSerializer(
     fun serializeName(name: Name): KotlinIr.Name {
         val proto = KotlinIr.Name.newBuilder()
             .setName(serializeString(name.toString()))
-        if (name.isSpecial) proto.setIsSpecial(true)
+            .setIsSpecial(name.isSpecial)
         return proto.build()
     }
 
@@ -1119,6 +1119,7 @@ open class IrModuleSerializer(
         val proto = KotlinIr.IrFile.newBuilder()
             .setFileEntry(serializeFileEntry(file.fileEntry))
             .setFqName(serializeString(file.fqName.toString()))
+            .setAnnotations(serializeAnnotations(file.annotations))
 
         file.declarations.forEach {
             if (it is IrTypeAlias || (it.descriptor.isExpectMember && !it.descriptor.isSerializableExpectClass)) {
