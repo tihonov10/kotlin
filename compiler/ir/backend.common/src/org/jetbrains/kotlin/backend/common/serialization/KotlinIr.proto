@@ -1,5 +1,5 @@
 syntax = "proto2";
-package org.jetbrains.kotlin.ir.backend.js.lower.serialization.ir;
+package org.jetbrains.kotlin.backend.common.serialization;
 
 option java_outer_classname = "KotlinIr";
 option optimize_for = LITE_RUNTIME;
