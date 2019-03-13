@@ -6,7 +6,9 @@
 package org.jetbrains.kotlin.codegen
 
 import org.jetbrains.kotlin.codegen.AsmUtil.unboxPrimitiveTypeOrNull
-import org.jetbrains.kotlin.codegen.StackValue.*
+import org.jetbrains.kotlin.codegen.StackValue.Companion.coercion
+import org.jetbrains.kotlin.codegen.StackValue.Companion.constant
+import org.jetbrains.kotlin.codegen.StackValue.Companion.enumEntry
 import org.jetbrains.kotlin.codegen.state.KotlinTypeMapper
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.load.java.Constant
