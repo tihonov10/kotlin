@@ -50,25 +50,25 @@ class FirJavaClass(
     override val superTypeRefs = mutableListOf<FirTypeRef>()
 
     override fun buildClassSpecificUseSiteScope(useSiteSession: FirSession): FirScope? {
-        return JavaClassEnhancementScope(useSiteSession, buildJavaUseSiteScope(useSiteSession))
+        return JavaClassEnhancementScope(useSiteSession, buildJavaUseSiteScope(this, useSiteSession))
     }
 
     override val declarations = mutableListOf<FirDeclaration>()
 
-    private fun FirRegularClass.buildJavaUseSiteScope(useSiteSession: FirSession): JavaClassUseSiteScope {
+    private fun buildJavaUseSiteScope(regularClass: FirRegularClass, useSiteSession: FirSession): JavaClassUseSiteScope {
         val superTypeEnhancementScope = FirCompositeScope(mutableListOf())
-        val declaredScope = FirClassDeclaredMemberScope(this, useSiteSession)
-        lookupSuperTypes(this, lookupInterfaces = true, deep = false, useSiteSession = useSiteSession)
+        val declaredScope = FirClassDeclaredMemberScope(regularClass, useSiteSession)
+        lookupSuperTypes(regularClass, lookupInterfaces = true, deep = false, useSiteSession = useSiteSession)
             .mapNotNullTo(superTypeEnhancementScope.scopes) { useSiteSuperType ->
                 if (useSiteSuperType is ConeClassErrorType) return@mapNotNullTo null
                 val symbol = useSiteSuperType.lookupTag.toSymbol(useSiteSession)
                 if (symbol is FirClassSymbol) {
                     // We need JavaClassEnhancementScope here to have already enhanced signatures from supertypes
-                    JavaClassEnhancementScope(useSiteSession, symbol.fir.buildJavaUseSiteScope(useSiteSession))
+                    JavaClassEnhancementScope(useSiteSession, buildJavaUseSiteScope(symbol.fir, useSiteSession))
                 } else {
                     null
                 }
             }
-        return JavaClassUseSiteScope(this, useSiteSession, superTypeEnhancementScope, declaredScope)
+        return JavaClassUseSiteScope(regularClass, useSiteSession, superTypeEnhancementScope, declaredScope)
     }
 }
