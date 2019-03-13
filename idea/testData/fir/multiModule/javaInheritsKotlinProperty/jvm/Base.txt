@@ -1,0 +1,6 @@
+FILE: Base.kt
+    public abstract interface Base {
+        public abstract property x(val): R|kotlin/Int|
+            public get(): R|kotlin/Int|
+
+    }
