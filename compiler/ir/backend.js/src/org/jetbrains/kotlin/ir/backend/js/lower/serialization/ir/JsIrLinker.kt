@@ -1,6 +1,7 @@
 package org.jetbrains.kotlin.ir.backend.js.lower.serialization.ir
 
 import org.jetbrains.kotlin.backend.common.LoggingContext
+import org.jetbrains.kotlin.backend.common.serialization.DescriptorUniqIdAware
 import org.jetbrains.kotlin.backend.common.serialization.KotlinIrLinker
 import org.jetbrains.kotlin.backend.common.serialization.UniqId
 import org.jetbrains.kotlin.backend.common.serialization.UniqIdKey
@@ -16,7 +17,8 @@ class JsIrLinker(
     logger: LoggingContext,
     builtIns: IrBuiltIns,
     symbolTable: SymbolTable) :
-    KotlinIrLinker(currentModule, logger, builtIns, symbolTable, null) {
+    KotlinIrLinker(currentModule, logger, builtIns, symbolTable, null),
+    DescriptorUniqIdAware by JsDescriptorUniqIdAware {
 
     private val FUNCTION_INDEX_START: Long
 
@@ -37,6 +39,6 @@ class JsIrLinker(
         builtIns.getPrimitiveTypeOrNullByDescriptor(symbol.descriptor, hasQuestionMark)
 
     override val descriptorReferenceDeserializer =
-        JsDescriptorReferenceDeserializer(currentModule, builtIns, FUNCTION_INDEX_START, JsDescriptorUniqIdAware)
+        JsDescriptorReferenceDeserializer(currentModule, builtIns, FUNCTION_INDEX_START)
 
 }

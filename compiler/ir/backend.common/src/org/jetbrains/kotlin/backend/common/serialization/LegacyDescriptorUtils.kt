@@ -12,6 +12,7 @@ import org.jetbrains.kotlin.descriptors.MemberDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.resolve.checkers.ExpectedActualDeclarationChecker
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.OverridingUtil
 
 internal val DeclarationDescriptor.isExpectMember: Boolean
@@ -45,3 +46,6 @@ internal fun <T : CallableMemberDescriptor> T.resolveFakeOverrideMaybeAbstract()
     }
 }
 
+// This is Native specific. Try to eliminate.
+val ModuleDescriptor.isForwardDeclarationModule get() =
+    name == Name.special("<forward declarations>")

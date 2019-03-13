@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.protobuf.ExtensionRegistryLite
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedCallableMemberDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
@@ -31,7 +32,8 @@ abstract class KotlinIrLinker(
     builtIns: IrBuiltIns,
     symbolTable: SymbolTable
     private val forwardModuleDescriptor: ModuleDescriptor?)
-        : IrModuleDeserializer(logger, builtIns, symbolTable) {
+        : IrModuleDeserializer(logger, builtIns, symbolTable),
+          DescriptorUniqIdAware {
 
     protected val deserializedSymbols = mutableMapOf<UniqIdKey, IrSymbol>()
     private val reachableTopLevels = mutableSetOf<UniqIdKey>()
@@ -188,18 +190,14 @@ abstract class KotlinIrLinker(
     private fun reader(moduleDescriptor: ModuleDescriptor, uniqId: UniqId) = moduleDescriptor.konanLibrary!!.irDeclaration(uniqId.index, uniqId.isLocal)
 
     private fun loadTopLevelDeclarationProto(uniqIdKey: UniqIdKey): KotlinIr.IrDeclaration {
-if (konan) {
         val stream = reader(uniqIdKey.moduleOfOrigin!!, uniqIdKey.uniqId).codedInputStream
-        return KotlinIr.IrDeclaration.parseFrom(stream, KonanSerializerProtocol.extensionRegistry)
-} else {
-        val file = File(irDirectory(deserializedModuleDescriptor!!), uniqIdKey.uniqId.declarationFileName)
-        return KotlinIr.IrDeclaration.parseFrom(file.readBytes().codedInputStream, JsKlibMetadataSerializerProtocol.extensionRegistry)
-}
+        return KotlinIr.IrDeclaration.parseFrom(stream, ExtensionRegistryLite.newInstance())
     }
 
     private fun findDeserializedDeclarationForDescriptor(descriptor: DeclarationDescriptor): DeclarationDescriptor? {
         val topLevelDescriptor = descriptor.findTopLevelDescriptor()
 
+        // This is Native specific. Try to eliminate.
         if (topLevelDescriptor.module.isForwardDeclarationModule) return null
 
         if (topLevelDescriptor !is DeserializedClassDescriptor && topLevelDescriptor !is DeserializedCallableMemberDescriptor) {

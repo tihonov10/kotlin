@@ -25,7 +25,7 @@ abstract class DescriptorReferenceDeserializer(
     protected abstract fun checkIfSpecialDescriptorId(id: Long): Boolean
     protected abstract fun getDescriptorIdOrNull(descriptor: DeclarationDescriptor): Long?
 
-    private fun getContributedDescriptors(packageFqNameString: String, name: String): Collection<DeclarationDescriptor> {
+    protected fun getContributedDescriptors(packageFqNameString: String, name: String): Collection<DeclarationDescriptor> {
         val packageFqName = packageFqNameString.let {
             if (it == "<root>") FqName.ROOT else FqName(it)
         }// TODO: whould we store an empty string in the protobuf?
@@ -39,11 +39,11 @@ abstract class DescriptorReferenceDeserializer(
                 .getContributedDescriptors(nameFilter = { it.asString() == contributedName })
     }
 
-    private class ClassMembers(val defaultConstructor: ClassConstructorDescriptor?,
+    protected class ClassMembers(val defaultConstructor: ClassConstructorDescriptor?,
                                val members: Map<Long, DeclarationDescriptor>,
                                val realMembers: Map<Long, DeclarationDescriptor>)
 
-    private fun getMembers(members: Collection<DeclarationDescriptor>): ClassMembers {
+    protected fun getMembers(members: Collection<DeclarationDescriptor>): ClassMembers {
         val allMembersMap = mutableMapOf<Long, DeclarationDescriptor>()
         val realMembersMap = mutableMapOf<Long, DeclarationDescriptor>()
         var classConstructorDescriptor: ClassConstructorDescriptor? = null
@@ -62,7 +62,7 @@ abstract class DescriptorReferenceDeserializer(
         return ClassMembers(classConstructorDescriptor, allMembersMap, realMembersMap)
     }
 
-    fun deserializeDescriptorReference(
+    open fun deserializeDescriptorReference(
         packageFqNameString: String,
         classFqNameString: String,
         name: String,

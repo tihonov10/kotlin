@@ -13,10 +13,9 @@ import org.jetbrains.kotlin.name.FqName
 class JsDescriptorReferenceDeserializer(
     currentModule: ModuleDescriptor,
     val builtIns: IrBuiltIns,
-    val FUNCTION_INDEX_START: Long,
-    val jsDescriptorUniqIdAware: DescriptorUniqIdAware) :
+    val FUNCTION_INDEX_START: Long) :
         DescriptorReferenceDeserializer(currentModule, mutableMapOf<UniqIdKey, UniqIdKey>()),
-        DescriptorUniqIdAware by jsDescriptorUniqIdAware {
+        DescriptorUniqIdAware by JsDescriptorUniqIdAware {
 
     val knownBuiltInsDescriptors = mutableMapOf<DeclarationDescriptor, UniqId>()
 
