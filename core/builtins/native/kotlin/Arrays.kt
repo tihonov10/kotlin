@@ -21,7 +21,7 @@ public class ByteArray(size: Int) {
     /**
      * Returns the array element at the given [index].  This method can be called using the index operator.
      *
-     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except in Kotlin/JS
      * where the behavior is unspecified.
      */
     public operator fun get(index: Int): Byte
@@ -29,7 +29,7 @@ public class ByteArray(size: Int) {
     /**
      * Sets the element at the given [index] to the given [value]. This method can be called using the index operator.
      *
-     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except in Kotlin/JS
      * where the behavior is unspecified.
      */
     public operator fun set(index: Int, value: Byte): Unit
@@ -55,7 +55,7 @@ public class CharArray(size: Int) {
     /**
      * Returns the array element at the given [index].  This method can be called using the index operator.
      *
-     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except in Kotlin/JS
      * where the behavior is unspecified.
      */
     public operator fun get(index: Int): Char
@@ -63,7 +63,7 @@ public class CharArray(size: Int) {
     /**
      * Sets the element at the given [index] to the given [value]. This method can be called using the index operator.
      *
-     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except in Kotlin/JS
      * where the behavior is unspecified.
      */
     public operator fun set(index: Int, value: Char): Unit
@@ -89,7 +89,7 @@ public class ShortArray(size: Int) {
     /**
      * Returns the array element at the given [index].  This method can be called using the index operator.
      *
-     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except in Kotlin/JS
      * where the behavior is unspecified.
      */
     public operator fun get(index: Int): Short
@@ -97,7 +97,7 @@ public class ShortArray(size: Int) {
     /**
      * Sets the element at the given [index] to the given [value]. This method can be called using the index operator.
      *
-     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except in Kotlin/JS
      * where the behavior is unspecified.
      */
     public operator fun set(index: Int, value: Short): Unit
@@ -123,7 +123,7 @@ public class IntArray(size: Int) {
     /**
      * Returns the array element at the given [index].  This method can be called using the index operator.
      *
-     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except in Kotlin/JS
      * where the behavior is unspecified.
      */
     public operator fun get(index: Int): Int
@@ -131,7 +131,7 @@ public class IntArray(size: Int) {
     /**
      * Sets the element at the given [index] to the given [value]. This method can be called using the index operator.
      *
-     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except in Kotlin/JS
      * where the behavior is unspecified.
      */
     public operator fun set(index: Int, value: Int): Unit
@@ -157,7 +157,7 @@ public class LongArray(size: Int) {
     /**
      * Returns the array element at the given [index].  This method can be called using the index operator.
      *
-     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except in Kotlin/JS
      * where the behavior is unspecified.
      */
     public operator fun get(index: Int): Long
@@ -165,7 +165,7 @@ public class LongArray(size: Int) {
     /**
      * Sets the element at the given [index] to the given [value]. This method can be called using the index operator.
      *
-     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except in Kotlin/JS
      * where the behavior is unspecified.
      */
     public operator fun set(index: Int, value: Long): Unit
@@ -191,7 +191,7 @@ public class FloatArray(size: Int) {
     /**
      * Returns the array element at the given [index].  This method can be called using the index operator.
      *
-     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except in Kotlin/JS
      * where the behavior is unspecified.
      */
     public operator fun get(index: Int): Float
@@ -199,7 +199,7 @@ public class FloatArray(size: Int) {
     /**
      * Sets the element at the given [index] to the given [value]. This method can be called using the index operator.
      *
-     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except in Kotlin/JS
      * where the behavior is unspecified.
      */
     public operator fun set(index: Int, value: Float): Unit
@@ -225,7 +225,7 @@ public class DoubleArray(size: Int) {
     /**
      * Returns the array element at the given [index].  This method can be called using the index operator.
      *
-     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except in Kotlin/JS
      * where the behavior is unspecified.
      */
     public operator fun get(index: Int): Double
@@ -233,7 +233,7 @@ public class DoubleArray(size: Int) {
     /**
      * Sets the element at the given [index] to the given [value]. This method can be called using the index operator.
      *
-     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except in Kotlin/JS
      * where the behavior is unspecified.
      */
     public operator fun set(index: Int, value: Double): Unit
@@ -259,7 +259,7 @@ public class BooleanArray(size: Int) {
     /**
      * Returns the array element at the given [index].  This method can be called using the index operator.
      *
-     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except in Kotlin/JS
      * where the behavior is unspecified.
      */
     public operator fun get(index: Int): Boolean
@@ -267,7 +267,7 @@ public class BooleanArray(size: Int) {
     /**
      * Sets the element at the given [index] to the given [value]. This method can be called using the index operator.
      *
-     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except in Kotlin/JS
      * where the behavior is unspecified.
      */
     public operator fun set(index: Int, value: Boolean): Unit

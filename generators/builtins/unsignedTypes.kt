@@ -431,7 +431,7 @@ class UnsignedArrayGenerator(val type: UnsignedType, out: PrintWriter) : BuiltIn
     /**
      * Returns the array element at the given [index]. This method can be called using the index operator.
      *
-     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except in Kotlin/JS
      * where the behavior is unspecified.
      */
     public operator fun get(index: Int): $elementType = storage[index].to$elementType()
@@ -439,7 +439,7 @@ class UnsignedArrayGenerator(val type: UnsignedType, out: PrintWriter) : BuiltIn
     /**
      * Sets the element at the given [index] to the given [value]. This method can be called using the index operator.
      *
-     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * If the [index] is out of bounds of this array, throws an [IndexOutOfBoundsException] except in Kotlin/JS
      * where the behavior is unspecified.
      */
     public operator fun set(index: Int, value: $elementType) {

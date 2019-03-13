@@ -33,7 +33,7 @@ public class String : Comparable<String>, CharSequence {
     /**
      * Returns the character of this string at the specified [index].
      *
-     * If the [index] is out of bounds of this string, throws an [IndexOutOfBoundsException] except on Kotlin/JS
+     * If the [index] is out of bounds of this string, throws an [IndexOutOfBoundsException] except in Kotlin/JS
      * where the behavior is unspecified.
      */
     public override fun get(index: Int): Char
