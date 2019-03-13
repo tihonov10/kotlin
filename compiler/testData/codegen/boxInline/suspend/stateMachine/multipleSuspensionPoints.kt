@@ -8,21 +8,12 @@
 suspend inline fun inlineMe(c: suspend () -> Unit) {
     c()
     c()
-    c()
-    c()
-    c()
 }
 suspend inline fun noinlineMe(noinline c: suspend () -> Unit) {
     c()
     c()
-    c()
-    c()
-    c()
 }
 suspend inline fun crossinlineMe(crossinline c: suspend () -> Unit) {
-    c()
-    c()
-    c()
     c()
     c()
 }
@@ -34,7 +25,7 @@ import COROUTINES_PACKAGE.*
 import helpers.*
 
 fun builder(c: suspend () -> Unit) {
-    c.startCoroutine(EmptyContinuation)
+    c.startCoroutine(CheckStateMachineContinuation)
 }
 
 var i = 0;
@@ -43,14 +34,20 @@ var k = 0;
 
 suspend fun calculateI() {
     i++
+    StateMachineChecker.suspendHere()
+    StateMachineChecker.suspendHere()
 }
 
 suspend fun calculateJ() {
     j++
+    StateMachineChecker.suspendHere()
+    StateMachineChecker.suspendHere()
 }
 
 suspend fun calculateK() {
     k++
+    StateMachineChecker.suspendHere()
+    StateMachineChecker.suspendHere()
 }
 
 suspend fun inlineSite() {
@@ -72,8 +69,9 @@ fun box(): String {
     builder {
         inlineSite()
     }
-    if (i != 10) return "FAIL I"
-    if (j != 10) return "FAIL J"
-    if (k != 10) return "FAIL K"
+    StateMachineChecker.check(24)
+    if (i != 4) return "FAIL I"
+    if (j != 4) return "FAIL J"
+    if (k != 4) return "FAIL K"
     return "OK"
 }

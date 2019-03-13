@@ -10,11 +10,14 @@ import org.jetbrains.kotlin.backend.common.COROUTINE_SUSPENDED_NAME
 import org.jetbrains.kotlin.backend.common.isBuiltInIntercepted
 import org.jetbrains.kotlin.backend.common.isBuiltInSuspendCoroutineUninterceptedOrReturn
 import org.jetbrains.kotlin.builtins.isBuiltinFunctionalType
-import org.jetbrains.kotlin.codegen.*
+import org.jetbrains.kotlin.codegen.StackValue
 import org.jetbrains.kotlin.codegen.binding.CodegenBinding
 import org.jetbrains.kotlin.codegen.inline.addFakeContinuationMarker
+import org.jetbrains.kotlin.codegen.needsExperimentalCoroutinesWrapper
 import org.jetbrains.kotlin.codegen.state.GenerationState
 import org.jetbrains.kotlin.codegen.state.KotlinTypeMapper
+import org.jetbrains.kotlin.codegen.topLevelClassAsmType
+import org.jetbrains.kotlin.codegen.topLevelClassInternalName
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.coroutines.isSuspendLambda
 import org.jetbrains.kotlin.descriptors.*
@@ -219,15 +222,11 @@ private fun NewResolvedCallImpl<VariableDescriptor>.asDummyOldResolvedCall(bindi
     )
 }
 
-fun ResolvedCall<*>.isSuspendNoInlineCall(codegen: ExpressionCodegen, languageVersionSettings: LanguageVersionSettings): Boolean {
-    val isInlineLambda = this.safeAs<VariableAsFunctionResolvedCall>()
-        ?.variableCall?.resultingDescriptor?.safeAs<ValueParameterDescriptor>()
-        ?.let { it.isCrossinline || (!it.isNoinline && codegen.context.functionDescriptor.isInline) } == true
-
+fun ResolvedCall<*>.isSuspendNoInlineCall(languageVersionSettings: LanguageVersionSettings): Boolean {
     val functionDescriptor = resultingDescriptor as? FunctionDescriptor ?: return false
     if (!functionDescriptor.unwrapInitialDescriptorForSuspendFunction().isSuspend) return false
     if (functionDescriptor.isBuiltInSuspendCoroutineUninterceptedOrReturnInJvm(languageVersionSettings)) return true
-    return !(functionDescriptor.isInline || isInlineLambda)
+    return !functionDescriptor.isInline
 }
 
 fun CallableDescriptor.isSuspendFunctionNotSuspensionView(): Boolean {

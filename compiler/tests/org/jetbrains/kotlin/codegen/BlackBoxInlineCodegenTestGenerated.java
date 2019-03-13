@@ -3530,16 +3530,6 @@ public class BlackBoxInlineCodegenTestGenerated extends AbstractBlackBoxInlineCo
             runTestWithPackageReplacement("compiler/testData/codegen/boxInline/suspend/multipleLocals.kt", "kotlin.coroutines");
         }
 
-        @TestMetadata("multipleSuspensionPoints.kt")
-        public void testMultipleSuspensionPoints_1_2() throws Exception {
-            runTestWithPackageReplacement("compiler/testData/codegen/boxInline/suspend/multipleSuspensionPoints.kt", "kotlin.coroutines.experimental");
-        }
-
-        @TestMetadata("multipleSuspensionPoints.kt")
-        public void testMultipleSuspensionPoints_1_3() throws Exception {
-            runTestWithPackageReplacement("compiler/testData/codegen/boxInline/suspend/multipleSuspensionPoints.kt", "kotlin.coroutines");
-        }
-
         @TestMetadata("returnValue.kt")
         public void testReturnValue_1_2() throws Exception {
             runTestWithPackageReplacement("compiler/testData/codegen/boxInline/suspend/returnValue.kt", "kotlin.coroutines.experimental");
@@ -3861,6 +3851,16 @@ public class BlackBoxInlineCodegenTestGenerated extends AbstractBlackBoxInlineCo
                 runTestWithPackageReplacement("compiler/testData/codegen/boxInline/suspend/stateMachine/innerObject.kt", "kotlin.coroutines");
             }
 
+            @TestMetadata("multipleSuspensionPoints.kt")
+            public void testMultipleSuspensionPoints_1_2() throws Exception {
+                runTestWithPackageReplacement("compiler/testData/codegen/boxInline/suspend/stateMachine/multipleSuspensionPoints.kt", "kotlin.coroutines.experimental");
+            }
+
+            @TestMetadata("multipleSuspensionPoints.kt")
+            public void testMultipleSuspensionPoints_1_3() throws Exception {
+                runTestWithPackageReplacement("compiler/testData/codegen/boxInline/suspend/stateMachine/multipleSuspensionPoints.kt", "kotlin.coroutines");
+            }
+
             @TestMetadata("normalInline.kt")
             public void testNormalInline_1_2() throws Exception {
                 runTestWithPackageReplacement("compiler/testData/codegen/boxInline/suspend/stateMachine/normalInline.kt", "kotlin.coroutines.experimental");
@@ -3879,6 +3879,16 @@ public class BlackBoxInlineCodegenTestGenerated extends AbstractBlackBoxInlineCo
             @TestMetadata("numberOfSuspentions.kt")
             public void testNumberOfSuspentions_1_3() throws Exception {
                 runTestWithPackageReplacement("compiler/testData/codegen/boxInline/suspend/stateMachine/numberOfSuspentions.kt", "kotlin.coroutines");
+            }
+
+            @TestMetadata("passLambdaObjectToInline.kt")
+            public void testPassLambdaObjectToInline_1_2() throws Exception {
+                runTestWithPackageReplacement("compiler/testData/codegen/boxInline/suspend/stateMachine/passLambdaObjectToInline.kt", "kotlin.coroutines.experimental");
+            }
+
+            @TestMetadata("passLambdaObjectToInline.kt")
+            public void testPassLambdaObjectToInline_1_3() throws Exception {
+                runTestWithPackageReplacement("compiler/testData/codegen/boxInline/suspend/stateMachine/passLambdaObjectToInline.kt", "kotlin.coroutines");
             }
         }
     }

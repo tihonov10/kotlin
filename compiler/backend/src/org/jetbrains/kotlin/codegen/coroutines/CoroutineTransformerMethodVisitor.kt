@@ -87,6 +87,8 @@ class CoroutineTransformerMethodVisitor(
             if (isForNamedFunction) getLastParameterIndex(methodNode.desc, methodNode.access) else 0
         )
 
+        removeOuterSuspensionPoints(methodNode)
+
         FixStackMethodTransformer().transform(containingClassInternalName, methodNode)
         RedundantLocalsEliminationMethodTransformer(languageVersionSettings).transform(containingClassInternalName, methodNode)
         if (languageVersionSettings.isReleaseCoroutines()) {
@@ -484,6 +486,38 @@ class CoroutineTransformerMethodVisitor(
         }
 
         suspensionPoints.removeAll { dceResult.isRemoved(it.suspensionCallBegin) || dceResult.isRemoved(it.suspensionCallEnd) }
+    }
+
+    private fun removeOuterSuspensionPoints(methodNode: MethodNode) {
+        // When inlining suspend function we generate a suspension point for the call of the inline function
+        // This inline function may also contain suspension points.
+        // If the function contains suspension points, ignore the suspension point for inline function call, since states in state-machine
+        // cannot be nested
+        class SuspensionPointWithInners(val marker: AbstractInsnNode, var inners: Int = 0)
+        val beforeSuspensionPointMarkerStack = Stack<SuspensionPointWithInners>()
+        val toRemove = arrayListOf<AbstractInsnNode>()
+        for (methodInsn in methodNode.instructions.toArray().filterIsInstance<MethodInsnNode>()) {
+            when {
+                isBeforeSuspendMarker(methodInsn) -> {
+                    for (suspensionPoint in beforeSuspensionPointMarkerStack) {
+                        suspensionPoint.inners++
+                    }
+                    beforeSuspensionPointMarkerStack.add(SuspensionPointWithInners(methodInsn))
+                }
+
+                isAfterSuspendMarker(methodInsn) -> {
+                    val suspensionPoint = beforeSuspensionPointMarkerStack.pop()
+                    if (suspensionPoint.inners != 0) {
+                        toRemove.add(suspensionPoint.marker.previous)
+                        toRemove.add(suspensionPoint.marker)
+                        toRemove.add(methodInsn.previous)
+                        toRemove.add(methodInsn)
+                    }
+                }
+            }
+        }
+
+        methodNode.instructions.removeAll(toRemove)
     }
 
     private fun collectSuspensionPoints(methodNode: MethodNode): MutableList<SuspensionPoint> {
