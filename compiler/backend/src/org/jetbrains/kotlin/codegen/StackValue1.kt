@@ -28,14 +28,12 @@ import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedValueArgument
 import org.jetbrains.kotlin.resolve.isInlineClassType
-import org.jetbrains.kotlin.resolve.jvm.AsmTypes
 import org.jetbrains.kotlin.resolve.jvm.AsmTypes.*
 import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodParameterKind
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.org.objectweb.asm.Label
-import org.jetbrains.org.objectweb.asm.Opcodes
 import org.jetbrains.org.objectweb.asm.Opcodes.*
 import org.jetbrains.org.objectweb.asm.Type
 import org.jetbrains.org.objectweb.asm.commons.InstructionAdapter
@@ -48,7 +46,7 @@ abstract class StackValue @JvmOverloads protected constructor(
     private val canHaveSideEffects: Boolean = true
 ) {
 
-    protected constructor(type: Type, canHaveSideEffects: Boolean) : this(type, null, canHaveSideEffects) {}
+    protected constructor(type: Type, canHaveSideEffects: Boolean) : this(type, null, canHaveSideEffects)
 
     /**
      * This method is called to put the value on the top of the JVM stack if `depth` other values have been put on the
@@ -91,19 +89,16 @@ abstract class StackValue @JvmOverloads protected constructor(
 
     open fun dup(v: InstructionAdapter, withReceiver: Boolean) {
         if (Type.VOID_TYPE != type) {
-            AsmUtil.dup(v, type)
+            dup(v, type)
         }
-    }
-
-    fun store(value: StackValue, v: InstructionAdapter) {
-        store(value, v, false)
     }
 
     fun canHaveSideEffects(): Boolean {
         return canHaveSideEffects
     }
 
-    open fun store(rightSide: StackValue, v: InstructionAdapter, skipReceiver: Boolean) {
+    @JvmOverloads
+    open fun store(rightSide: StackValue, v: InstructionAdapter, skipReceiver: Boolean = false) {
         if (!skipReceiver) {
             putReceiver(v, false)
         }
@@ -123,21 +118,16 @@ abstract class StackValue @JvmOverloads protected constructor(
         coerce(topOfStackType, topOfStackKotlinType, this.type, this.kotlinType, v)
     }
 
-    private class None private constructor() : StackValue(Type.VOID_TYPE, false) {
+    object None : StackValue(Type.VOID_TYPE, false) {
 
         override fun putSelector(type: Type, kotlinType: KotlinType?, v: InstructionAdapter) {
             coerceTo(type, kotlinType, v)
-        }
-
-        companion object {
-            val INSTANCE = None()
         }
     }
 
     class Local constructor(val index: Int, type: Type, kotlinType: KotlinType? = null) : StackValue(type, kotlinType, false) {
 
         init {
-
             if (index < 0) {
                 throw IllegalStateException("local variable index must be non-negative")
             }
@@ -156,15 +146,9 @@ abstract class StackValue @JvmOverloads protected constructor(
 
     class LateinitLocal constructor(val index: Int, type: Type, kotlinType: KotlinType, private val name: Name) :
         StackValue(type, kotlinType, false) {
-
         init {
-
             if (index < 0) {
                 throw IllegalStateException("local variable index must be non-negative")
-            }
-
-            if (name == null) {
-                throw IllegalArgumentException("Lateinit local variable should have name: #" + index + " " + type.descriptor)
             }
         }
 
@@ -189,7 +173,6 @@ abstract class StackValue @JvmOverloads protected constructor(
         private val codegen: ExpressionCodegen
     ) : StackValue(type) {
 
-
         private fun getResolvedCall(isGetter: Boolean): ResolvedCall<FunctionDescriptor> {
             val bindingContext = codegen.state.bindingContext
             val accessor = (if (isGetter) variableDescriptor.getter else variableDescriptor.setter)
@@ -206,7 +189,7 @@ abstract class StackValue @JvmOverloads protected constructor(
                         arguments.size + ": " + resolvedCall
             }
 
-            codegen.tempVariables[arguments[0].asElement()] = StackValue.constant(null, OBJECT_TYPE)
+            codegen.tempVariables[arguments[0].asElement()] = constant(null, OBJECT_TYPE)
             codegen.tempVariables[arguments[1].asElement()] = metadataValue
             val lastValue = codegen.invokeFunction(resolvedCall, delegateValue)
             lastValue.put(type, kotlinType, v)
@@ -223,7 +206,7 @@ abstract class StackValue @JvmOverloads protected constructor(
                         arguments.size + ": " + resolvedCall
             }
 
-            codegen.tempVariables[arguments[0].asElement()] = StackValue.constant(null, OBJECT_TYPE)
+            codegen.tempVariables[arguments[0].asElement()] = constant(null, OBJECT_TYPE)
             codegen.tempVariables[arguments[1].asElement()] = metadataValue
             codegen.tempVariables[arguments[2].asElement()] = rightSide
             val lastValue = codegen.invokeFunction(resolvedCall, delegateValue)
@@ -235,42 +218,43 @@ abstract class StackValue @JvmOverloads protected constructor(
         }
     }
 
-    class OnStack @JvmOverloads constructor(type: Type, kotlinType: KotlinType? = null) : StackValue(type, kotlinType) {
+    class OnStack constructor(type: Type, kotlinType: KotlinType? = null) : StackValue(type, kotlinType) {
 
         override fun putSelector(type: Type, kotlinType: KotlinType?, v: InstructionAdapter) {
             coerceTo(type, kotlinType, v)
         }
 
         override fun moveToTopOfStack(type: Type, kotlinType: KotlinType?, v: InstructionAdapter, depth: Int) {
-            if (depth == 0) {
-                put(type, kotlinType, v)
-            } else if (depth == 1) {
-                val size = this.type.size
-                if (size == 1) {
-                    v.swap()
-                } else if (size == 2) {
-                    v.dupX2()
-                    v.pop()
-                } else {
-                    throw UnsupportedOperationException("don't know how to move type $type to top of stack")
-                }
+            when (depth) {
+                0 -> put(type, kotlinType, v)
+                1 -> {
+                    when (this.type.size) {
+                        1 -> v.swap()
+                        2 -> {
+                            v.dupX2()
+                            v.pop()
+                        }
+                        else -> throw UnsupportedOperationException("don't know how to move type $type to top of stack")
+                    }
 
-                coerceTo(type, kotlinType, v)
-            } else if (depth == 2) {
-                val size = this.type.size
-                if (size == 1) {
-                    v.dup2X1()
-                    v.pop2()
-                } else if (size == 2) {
-                    v.dup2X2()
-                    v.pop2()
-                } else {
-                    throw UnsupportedOperationException("don't know how to move type $type to top of stack")
+                    coerceTo(type, kotlinType, v)
                 }
+                2 -> {
+                    when (this.type.size) {
+                        1 -> {
+                            v.dup2X1()
+                            v.pop2()
+                        }
+                        2 -> {
+                            v.dup2X2()
+                            v.pop2()
+                        }
+                        else -> throw UnsupportedOperationException("don't know how to move type $type to top of stack")
+                    }
 
-                coerceTo(type, kotlinType, v)
-            } else {
-                throw UnsupportedOperationException("unsupported move-to-top depth $depth")
+                    coerceTo(type, kotlinType, v)
+                }
+                else -> throw UnsupportedOperationException("unsupported move-to-top depth $depth")
             }
         }
     }
@@ -296,7 +280,7 @@ abstract class StackValue @JvmOverloads protected constructor(
                 v.aconst(value)
             }
 
-            if (value != null || AsmUtil.isPrimitive(type)) {
+            if (value != null || isPrimitive(type)) {
                 coerceTo(type, kotlinType, v)
             }
         }
@@ -344,18 +328,14 @@ abstract class StackValue @JvmOverloads protected constructor(
         private val codegen: ExpressionCodegen,
         internal val valueArguments: List<ResolvedValueArgument>
     ) : StackValue(OBJECT_TYPE) {
-        private val frame: FrameMap
+        private val frame: FrameMap = codegen.myFrameMap
         internal var defaultArgs: DefaultCallArgs? = null
         internal var callGenerator: CallGenerator? = null
         internal var isComplexOperationWithDup: Boolean = false
 
-        init {
-            this.frame = codegen.myFrameMap
-        }
-
         override fun putSelector(type: Type, kotlinType: KotlinType?, v: InstructionAdapter) {
             val call = if (isGetter) resolvedGetCall else resolvedSetCall
-            val newReceiver = StackValue.receiver(call!!, receiver, codegen, callable)
+            val newReceiver = receiver(call!!, receiver, codegen, callable)
             val generator = createArgumentGenerator()
             newReceiver.put(newReceiver.type, newReceiver.kotlinType, v)
             callGenerator!!.processAndPutHiddenParameters(false)
@@ -378,7 +358,7 @@ abstract class StackValue @JvmOverloads protected constructor(
             dupReceiver(v)
         }
 
-        fun dupReceiver(v: InstructionAdapter) {
+        private fun dupReceiver(v: InstructionAdapter) {
             if (CollectionElement.isStandardStack(
                     codegen.typeMapper,
                     resolvedGetCall,
@@ -400,7 +380,7 @@ abstract class StackValue @JvmOverloads protected constructor(
                 v.store(firstParamIndex, type)
             }
 
-            val receiverParameter = resolvedGetCall!!.extensionReceiver
+            val receiverParameter = resolvedGetCall.extensionReceiver
             var receiverIndex = -1
             if (receiverParameter != null) {
                 val type = codegen.typeMapper.mapType(receiverParameter.type)
@@ -419,14 +399,16 @@ abstract class StackValue @JvmOverloads protected constructor(
 
             val realReceiverIndex: Int
             val realReceiverType: Type
-            if (receiverIndex != -1) {
-                realReceiverType = codegen.typeMapper.mapType(receiverParameter!!.type)
-                realReceiverIndex = receiverIndex
-            } else if (thisIndex != -1) {
-                realReceiverType = OBJECT_TYPE
-                realReceiverIndex = thisIndex
-            } else {
-                throw UnsupportedOperationException()
+            when {
+                receiverIndex != -1 -> {
+                    realReceiverType = codegen.typeMapper.mapType(receiverParameter!!.type)
+                    realReceiverIndex = receiverIndex
+                }
+                thisIndex != -1 -> {
+                    realReceiverType = OBJECT_TYPE
+                    realReceiverIndex = thisIndex
+                }
+                else -> throw UnsupportedOperationException()
             }
 
             if (resolvedSetCall!!.dispatchReceiver != null) {
@@ -477,25 +459,24 @@ abstract class StackValue @JvmOverloads protected constructor(
         private val resolvedSetCall: ResolvedCall<FunctionDescriptor>?,
         private val codegen: ExpressionCodegen
     ) : StackValueWithSimpleReceiver(type, kotlinType, false, false, collectionElementReceiver, true) {
-        private val getter: Callable?
-        private val setter: Callable?
+
+        private val getter: Callable? =
+            if (resolvedGetCall == null)
+                null
+            else
+                codegen.resolveToCallable(codegen.accessibleFunctionDescriptor(resolvedGetCall), false, resolvedGetCall)
+
+        private val setter: Callable? =
+            if (resolvedSetCall == null)
+                null
+            else
+                codegen.resolveToCallable(codegen.accessibleFunctionDescriptor(resolvedSetCall), false, resolvedSetCall)
 
         private val callGenerator: CallGenerator
             get() = (receiver as CollectionElementReceiver).callGenerator ?: error(
                 "CollectionElementReceiver should be putted on stack before CollectionElement:" +
                         " getCall = " + resolvedGetCall + ",  setCall = " + resolvedSetCall
             )
-
-        init {
-            this.setter = if (resolvedSetCall == null)
-                null
-            else
-                codegen.resolveToCallable(codegen.accessibleFunctionDescriptor(resolvedSetCall), false, resolvedSetCall)
-            this.getter = if (resolvedGetCall == null)
-                null
-            else
-                codegen.resolveToCallable(codegen.accessibleFunctionDescriptor(resolvedGetCall), false, resolvedGetCall)
-        }
 
         override fun putSelector(type: Type, kotlinType: KotlinType?, v: InstructionAdapter) {
             if (getter == null) {
@@ -531,7 +512,7 @@ abstract class StackValue @JvmOverloads protected constructor(
 
             callGenerator.putValueIfNeeded(
                 JvmKotlinType(lastParameterType, lastParameterKotlinType),
-                StackValue.onStack(lastParameterType, lastParameterKotlinType)
+                onStack(lastParameterType, lastParameterKotlinType)
             )
 
             //Convention setter couldn't have default parameters, just getter can have it at last positions
@@ -545,8 +526,8 @@ abstract class StackValue @JvmOverloads protected constructor(
                     val argument = arguments[i]
                     if (argument is DefaultValueArgument) {
                         val defaultType = types[i]
-                        AsmUtil.swap(v, lastParameterType, defaultType)
-                        AsmUtil.pop(v, defaultType)
+                        swap(v, lastParameterType, defaultType)
+                        pop(v, defaultType)
                     }
                 }
             }
@@ -629,7 +610,7 @@ abstract class StackValue @JvmOverloads protected constructor(
         private val delegateKotlinType: KotlinType?
 
         val delegateOrNull: Property?
-            get() = if (delegateKotlinType == null) null else Property(this, DelegatePropertyConstructorMarker)
+            get() = if (delegateKotlinType == null) null else Property(this)
 
         constructor(
             descriptor: PropertyDescriptor, backingFieldOwner: Type?, getter: CallableMethod?,
@@ -648,10 +629,6 @@ abstract class StackValue @JvmOverloads protected constructor(
             this.delegateKotlinType = delegateKotlinType
         }
 
-        private object DelegatePropertyConstructorMarker {
-
-        }
-
         /**
          * Given a delegating property, create a "property" corresponding to the underlying delegate itself.
          * This will take care of backing fields, accessors, and other such stuff.
@@ -661,9 +638,8 @@ abstract class StackValue @JvmOverloads protected constructor(
          * (so that the resulting property has no underlying delegate of its own).
          *
          * @param delegating    delegating property
-         * @param marker        intent marker
          */
-        private constructor(delegating: Property, marker: DelegatePropertyConstructorMarker) : super(
+        private constructor(delegating: Property) : super(
             delegating.type, delegating.delegateKotlinType,
             delegating.isStaticPut, delegating.isStaticStore, delegating.receiver, true
         ) {
@@ -700,8 +676,8 @@ abstract class StackValue @JvmOverloads protected constructor(
                 coerceTo(type, kotlinType, v)
             } else {
                 val getterDescriptor = descriptor.getter ?: error("Getter descriptor should be not null for $descriptor")
-                if (resolvedCall != null && getterDescriptor!!.isInline) {
-                    val callGenerator = codegen.getOrCreateCallGenerator(resolvedCall, getterDescriptor!!)
+                if (resolvedCall != null && getterDescriptor.isInline) {
+                    val callGenerator = codegen.getOrCreateCallGenerator(resolvedCall, getterDescriptor)
                     callGenerator.processAndPutHiddenParameters(false)
                     callGenerator.genCall(getter, resolvedCall, false, codegen)
                 } else {
@@ -709,7 +685,7 @@ abstract class StackValue @JvmOverloads protected constructor(
                 }
 
                 var typeOfValueOnStack = getter.returnType
-                var kotlinTypeOfValueOnStack = getterDescriptor!!.returnType
+                var kotlinTypeOfValueOnStack = getterDescriptor.returnType
                 if (DescriptorUtils.isAnnotationClass(descriptor.containingDeclaration)) {
                     if (this.type == K_CLASS_TYPE) {
                         wrapJavaClassIntoKClass(v)
@@ -758,7 +734,7 @@ abstract class StackValue @JvmOverloads protected constructor(
         }
 
         private fun inlineConstant(type: Type, kotlinType: KotlinType?, v: InstructionAdapter): Boolean {
-            assert(AsmUtil.isPrimitive(this.type) || AsmTypes.JAVA_STRING_TYPE == this.type) { "Const property should have primitive or string type: $descriptor" }
+            assert(isPrimitive(this.type) || JAVA_STRING_TYPE == this.type) { "Const property should have primitive or string type: $descriptor" }
             assert(isStaticPut) { "Const property should be static$descriptor" }
 
             val constantValue = descriptor.compileTimeInitializer ?: return false
@@ -768,16 +744,16 @@ abstract class StackValue @JvmOverloads protected constructor(
                 value = value.toFloat()
             }
 
-            StackValue.constant(value, this.type, this.kotlinType).putSelector(type, kotlinType, v)
+            constant(value, this.type, this.kotlinType).putSelector(type, kotlinType, v)
 
             return true
         }
 
         override fun store(rightSide: StackValue, v: InstructionAdapter, skipReceiver: Boolean) {
             val setterDescriptor = descriptor.setter
-            if (resolvedCall != null && setterDescriptor != null && setterDescriptor!!.isInline) {
+            if (resolvedCall != null && setterDescriptor != null && setterDescriptor.isInline) {
                 assert(setter != null) { "Setter should be not null for $descriptor" }
-                val callGenerator = codegen.getOrCreateCallGenerator(resolvedCall, setterDescriptor!!)
+                val callGenerator = codegen.getOrCreateCallGenerator(resolvedCall, setterDescriptor)
                 if (!skipReceiver) {
                     putReceiver(v, false)
                 }
@@ -785,7 +761,7 @@ abstract class StackValue @JvmOverloads protected constructor(
                 callGenerator.putValueIfNeeded(
                     JvmKotlinType(
                         setter!!.getValueParameters().last().asmType,
-                        setterDescriptor!!.valueParameters.last().getType()
+                        setterDescriptor.valueParameters.last().type
                     ),
                     rightSide
                 )
@@ -809,8 +785,7 @@ abstract class StackValue @JvmOverloads protected constructor(
                 )
             } else {
                 val setterDescriptor = descriptor.setter
-                val setterLastParameterType =
-                    if (setterDescriptor != null) setterDescriptor!!.valueParameters.last().getReturnType() else null
+                val setterLastParameterType = setterDescriptor?.valueParameters?.last()?.returnType
 
                 coerce(topOfStackType, topOfStackKotlinType, this.setter.parameterTypes.last(), setterLastParameterType, v)
                 setter.genInvokeInstruction(v)
@@ -855,7 +830,7 @@ abstract class StackValue @JvmOverloads protected constructor(
         }
     }
 
-    class Shared @JvmOverloads constructor(
+    class Shared constructor(
         val index: Int,
         type: Type,
         kotlinType: KotlinType? = null,
@@ -874,7 +849,7 @@ abstract class StackValue @JvmOverloads protected constructor(
             val sharedType = sharedTypeForType(this.type)
             v.visitFieldInsn(GETFIELD, sharedType.internalName, "element", refType.descriptor)
             if (isLateinit) {
-                StackValue.genNonNullAssertForLateinit(v, name!!.asString())
+                genNonNullAssertForLateinit(v, name!!.asString())
             }
             coerceFrom(refType, null, v)
             coerceTo(type, kotlinType, v)
@@ -890,23 +865,16 @@ abstract class StackValue @JvmOverloads protected constructor(
 
     class FieldForSharedVar(
         type: Type, kotlinType: KotlinType?,
-        internal val owner: Type, internal val name: String, receiver: StackValue.Field,
+        internal val owner: Type, internal val name: String, receiver: Field,
         internal val isLateinit: Boolean, internal val variableName: Name
     ) : StackValueWithSimpleReceiver(type, kotlinType, false, false, receiver, receiver.canHaveSideEffects()) {
-
-        init {
-
-            if (isLateinit && variableName == null) {
-                throw IllegalArgumentException("variableName should be non-null for captured lateinit variable $name")
-            }
-        }
 
         override fun putSelector(type: Type, kotlinType: KotlinType?, v: InstructionAdapter) {
             val sharedType = sharedTypeForType(this.type)
             val refType = refType(this.type)
             v.visitFieldInsn(GETFIELD, sharedType.internalName, "element", refType.descriptor)
             if (isLateinit) {
-                StackValue.genNonNullAssertForLateinit(v, variableName.asString())
+                genNonNullAssertForLateinit(v, variableName.asString())
             }
             coerceFrom(refType, null, v)
             coerceTo(type, kotlinType, v)
@@ -970,12 +938,12 @@ abstract class StackValue @JvmOverloads protected constructor(
     ) : StackValue(type, value.kotlinType) {
 
         override fun putSelector(type: Type, kotlinType: KotlinType?, v: InstructionAdapter) {
-            value = StackValue.complexReceiver(value, true, false, true)
-            value!!.put(this.type, this.kotlinType, v)
+            value = complexReceiver(value, true, false, true)
+            value.put(this.type, this.kotlinType, v)
 
-            value!!.store(codegen.invokeFunction(resolvedCall, StackValue.onStack(this.type, this.kotlinType)), v, true)
+            value.store(codegen.invokeFunction(resolvedCall, onStack(this.type, this.kotlinType)), v, true)
 
-            value!!.put(this.type, this.kotlinType, v, true)
+            value.put(this.type, this.kotlinType, v, true)
             coerceTo(type, kotlinType, v)
         }
     }
@@ -1014,7 +982,7 @@ abstract class StackValue @JvmOverloads protected constructor(
             } else {
                 val receiverSize = if (isNonStaticAccess(false)) receiverSize() else 0
                 when (receiverSize) {
-                    0 -> AsmUtil.dup(v, type)
+                    0 -> dup(v, type)
 
                     1 -> if (type.size == 2) {
                         v.dup2X1()
@@ -1129,9 +1097,9 @@ abstract class StackValue @JvmOverloads protected constructor(
         }
 
         override fun storeSelector(
-            topOfStackType: Type, kotlinType: KotlinType?, v: InstructionAdapter
+            topOfStackType: Type, topOfStackKotlinType: KotlinType?, v: InstructionAdapter
         ) {
-            originalValue.storeSelector(topOfStackType, kotlinType, v)
+            originalValue.storeSelector(topOfStackType, topOfStackKotlinType, v)
         }
 
         override fun dup(v: InstructionAdapter, withWriteReceiver: Boolean) {
@@ -1189,11 +1157,11 @@ abstract class StackValue @JvmOverloads protected constructor(
         private const val NULLABLE_SHORT_TYPE_NAME = "java/lang/Short"
         private const val NULLABLE_LONG_TYPE_NAME = "java/lang/Long"
 
-        @JvmField val LOCAL_0: Local = local(0, OBJECT_TYPE)
+        @JvmField
+        val LOCAL_0: Local = local(0, OBJECT_TYPE)
 
         private val UNIT = operation(UNIT_TYPE) { v ->
             v.visitFieldInsn(GETSTATIC, UNIT_TYPE.internalName, JvmAbi.INSTANCE_FIELD, UNIT_TYPE.descriptor)
-            null
         }
 
         @JvmStatic
@@ -1209,11 +1177,11 @@ abstract class StackValue @JvmOverloads protected constructor(
         @JvmStatic
         @JvmOverloads
         fun local(index: Int, type: Type, descriptor: VariableDescriptor, delegateKotlinType: KotlinType? = null): StackValue {
-            if (descriptor.isLateInit) {
+            return if (descriptor.isLateInit) {
                 assert(delegateKotlinType == null) { "Delegated property can't be lateinit: $descriptor, delegate type: $delegateKotlinType" }
-                return LateinitLocal(index, type, descriptor.type, descriptor.name)
+                LateinitLocal(index, type, descriptor.type, descriptor.name)
             } else {
-                return Local(
+                Local(
                     index, type,
                     delegateKotlinType ?: descriptor.type
                 )
@@ -1290,15 +1258,12 @@ abstract class StackValue @JvmOverloads protected constructor(
 
         private fun createDefaultPrimitiveValue(type: Type): StackValue {
             assert(Type.BOOLEAN <= type.sort && type.sort <= Type.DOUBLE) { "'createDefaultPrimitiveValue' method should be called only for primitive types, but $type" }
-            var value: Any = 0
-            if (type.sort == Type.BOOLEAN) {
-                value = java.lang.Boolean.FALSE
-            } else if (type.sort == Type.FLOAT) {
-                value = 0.0f
-            } else if (type.sort == Type.DOUBLE) {
-                value = 0.0
-            } else if (type.sort == Type.LONG) {
-                value = 0L
+            val value = when {
+                type.sort == Type.BOOLEAN -> java.lang.Boolean.FALSE
+                type.sort == Type.FLOAT -> 0.0f
+                type.sort == Type.DOUBLE -> 0.0
+                type.sort == Type.LONG -> 0L
+                else -> 0.toInt()
             }
 
             return constant(value, type)
@@ -1331,7 +1296,7 @@ abstract class StackValue @JvmOverloads protected constructor(
 
         @JvmStatic
         fun compareWithNull(argument: StackValue, operation: Int): StackValue {
-            return BranchedValue(argument, null, AsmTypes.OBJECT_TYPE, operation)
+            return BranchedValue(argument, null, OBJECT_TYPE, operation)
         }
 
         @JvmStatic
@@ -1380,7 +1345,7 @@ abstract class StackValue @JvmOverloads protected constructor(
         }
 
         @JvmStatic
-        fun field(field: StackValue.Field, newReceiver: StackValue): Field {
+        fun field(field: Field, newReceiver: StackValue): Field {
             return field(field.type, field.kotlinType, field.owner, field.name, field.isStaticPut, newReceiver, field.descriptor)
         }
 
@@ -1431,17 +1396,15 @@ abstract class StackValue @JvmOverloads protected constructor(
         private fun box(type: Type, toType: Type, v: InstructionAdapter) {
             var type = type
             if (type === Type.INT_TYPE) {
-                if (toType.internalName == NULLABLE_BYTE_TYPE_NAME) {
-                    type = Type.BYTE_TYPE
-                } else if (toType.internalName == NULLABLE_SHORT_TYPE_NAME) {
-                    type = Type.SHORT_TYPE
-                } else if (toType.internalName == NULLABLE_LONG_TYPE_NAME) {
-                    type = Type.LONG_TYPE
+                when {
+                    toType.internalName == NULLABLE_BYTE_TYPE_NAME -> type = Type.BYTE_TYPE
+                    toType.internalName == NULLABLE_SHORT_TYPE_NAME -> type = Type.SHORT_TYPE
+                    toType.internalName == NULLABLE_LONG_TYPE_NAME -> type = Type.LONG_TYPE
                 }
                 v.cast(Type.INT_TYPE, type)
             }
 
-            val boxedType = AsmUtil.boxType(type)
+            val boxedType = boxType(type)
             if (boxedType === type) return
 
             v.invokestatic(boxedType.internalName, "valueOf", Type.getMethodDescriptor(boxedType, type), false)
@@ -1666,7 +1629,7 @@ abstract class StackValue @JvmOverloads protected constructor(
                 } else if (toType.sort == Type.CHAR) {
                     if (fromType == NUMBER_TYPE) {
                         unbox(NUMBER_TYPE, Type.INT_TYPE, v)
-                        v.visitInsn(Opcodes.I2C)
+                        v.visitInsn(I2C)
                     } else {
                         coerce(fromType, CHARACTER_WRAPPER_TYPE, v)
                         unbox(CHARACTER_WRAPPER_TYPE, Type.CHAR_TYPE, v)
@@ -1692,7 +1655,7 @@ abstract class StackValue @JvmOverloads protected constructor(
 
         @JvmStatic
         fun none(): StackValue {
-            return None.INSTANCE
+            return None
         }
 
         @JvmStatic
@@ -1780,7 +1743,7 @@ abstract class StackValue @JvmOverloads protected constructor(
             resolvedCall: ResolvedCall<*>,
             codegen: ExpressionCodegen
         ): StackValue {
-            return if (stackValue is StackValue.Local && Type.INT_TYPE === stackValue.type) {
+            return if (stackValue is Local && Type.INT_TYPE === stackValue.type) {
                 preIncrementForLocalVar(stackValue.index, delta, stackValue.kotlinType)
             } else PrefixIncrement(type, stackValue, resolvedCall, codegen)
         }
@@ -1853,7 +1816,7 @@ abstract class StackValue @JvmOverloads protected constructor(
                 } else if (isLocalFunCall(callableMethod) && !isExtension) {
                     if (descriptor is SimpleFunctionDescriptor) {
                         val initial = descriptor.unwrapInitialDescriptorForSuspendFunction()
-                        if (initial != null && initial.isSuspend) {
+                        if (initial.isSuspend) {
                             return putLocalSuspendFunctionOnStack(codegen, initial.original)
                         }
                     }
@@ -1899,7 +1862,7 @@ abstract class StackValue @JvmOverloads protected constructor(
                     val isRecursive = bindingContext.get(RECURSIVE_SUSPEND_CALLABLE_REFERENCE, thisDescriptor)
                     if (isRecursive != null && isRecursive) {
                         assert(classDescriptor != null) { "No CLASS_FOR_CALLABLE$callee" }
-                        return thisOrOuter(codegen, classDescriptor!!, false, false)
+                        return thisOrOuter(codegen, classDescriptor!!, isSuper = false, castReceiver = false)
                     }
                     // Otherwise, just call constructor of the closure
                     return codegen.findCapturedValue(callee)
@@ -1927,7 +1890,7 @@ abstract class StackValue @JvmOverloads protected constructor(
         @JvmStatic
         @Contract("null -> false")
         fun isLocalFunCall(callableMethod: Callable?): Boolean {
-            return callableMethod != null && callableMethod.generateCalleeType != null
+            return callableMethod?.generateCalleeType != null
         }
 
         @JvmStatic
@@ -1991,15 +1954,14 @@ abstract class StackValue @JvmOverloads protected constructor(
         }
 
         @JvmStatic
-        fun sharedTypeForType(type: Type): Type {
+        fun sharedTypeForType(type: Type): Type =
             when (type.sort) {
-                Type.OBJECT, Type.ARRAY -> return OBJECT_REF_TYPE
+                Type.OBJECT, Type.ARRAY -> OBJECT_REF_TYPE
                 else -> {
-                    val primitiveType = AsmUtil.asmPrimitiveTypeToLangPrimitiveType(type) ?: throw UnsupportedOperationException()
-                    return sharedTypeForPrimitive(primitiveType)
+                    val primitiveType = asmPrimitiveTypeToLangPrimitiveType(type) ?: throw UnsupportedOperationException()
+                    sharedTypeForPrimitive(primitiveType)
                 }
             }
-        }
 
         @JvmStatic
         fun refType(type: Type): Type {
